@@ -1,6 +1,11 @@
 #!/usr/bin/python3 -u
 # -*- coding: utf-8 -*-
 import os
+import time
+import logging
+from prometheus_client import Summary, Counter, Gauge, Histogram
+import binance.client
+
 # User setup
 
 # Slack webhook
