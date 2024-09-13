@@ -1,10 +1,11 @@
 #!/usr/bin/python3 -u
 # -*- coding: utf-8 -*-
 """
+#TODO - deprecate this ASAP, its a mess
 Autovoting script for Terra oracle by B-Harvest
 https://github.com/b-harvest/terra_oracle_voter
 
-WARNING : this script is for terra blockchain with version v0.3.0+ only
+This script has been broken down into its component parts and will be deprecated ASAP
 """
 
 import hashlib
