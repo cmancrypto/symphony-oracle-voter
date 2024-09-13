@@ -40,7 +40,7 @@ from config import *
 session = requests.session()
 
 # Be friendly to the APIs we use and specify a user-agent
-session.headers['User-Agent'] = "bharvest-oracle-voter/0 (+https://github.com/b-harvest/terra_oracle_voter)"
+session.headers['User-Agent'] = "symphony-oracle-voter/0 (+https://github.com/cmancrypto/symphony-oracle-voter)"
 
 # Start metrics server in a background thread
 start_http_server(int(metrics_port))
