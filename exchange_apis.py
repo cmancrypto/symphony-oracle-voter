@@ -7,6 +7,7 @@ from pyband.obi import PyObi
 from config import *
 import time
 import binance
+from urllib.parse import urlencode
 
 # TODO - remove Terra assets/endpoints, update to Symphony assets
 
@@ -41,7 +42,7 @@ async def fx_for(symbol_to):
 
 
 def get_fx_rate():
-    symbol_list = ["KRW", "EUR", "CNY", "JPY", "XDR", "MNT", "GBP", "INR", "CAD", "CHF", "HKD", "AUD", "SGD", "THB"]
+    symbol_list = ["KRW", "VND", "EUR", "CNY", "JPY", "XDR", "MNT", "GBP", "INR", "CAD", "CHF", "HKD", "AUD", "SGD", "THB"]
 
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
@@ -53,7 +54,7 @@ def get_fx_rate():
         if symbol == "XDR":
             symbol = "SDR"
         result_real_fx[f"USD{symbol}"] = float(result["Realtime Currency Exchange Rate"]["5. Exchange Rate"])
-
+        logger.info(result_real_fx)
     return False, result_real_fx
 
 
@@ -62,34 +63,54 @@ def get_fx_rate_free():
     pass
 
 
-def get_fx_rate_from_band():
+## this is updated, but there's no VND supported
+def get_fx_rate_free_from_band():
     try:
-        symbol_list = ["KRW", "EUR", "CNY", "JPY", "XDR", "MNT", "GBP", "INR", "CAD", "CHF", "HKD", "AUD", "SGD", "THB"]
-        bandcli = Client(band_endpoint)
+        symbol_list = ["KRW", "EUR", "CNY", "JPY", "GBP", "INR", "CAD", "CHF", "HKD", "AUD", "SGD", "THB"]
+
+        base_url = "https://laozi1.bandchain.org/api/oracle/v1"
         oracle_script_id, multiplier, min_count, ask_count = map(int, band_luna_price_params.split(","))
+        params= {
+            "ask_count": ask_count,
+            "min_count": min_count,
+            "symbols": symbol_list,
+        }
+        # Fetch the latest request ID for the standard dataset
+        url = f"{base_url}/request_prices?{urlencode(params, doseq=True)}"
+        response = requests.get(url)
+        response.raise_for_status()  # Raise an exception for bad status codes
 
-        schema = bandcli.get_oracle_script(oracle_script_id).schema
-        obi = PyObi(schema)
-        result = obi.decode_output(
-            bandcli.get_latest_request(
-                oracle_script_id,
-                obi.encode_input({"multiplier": multiplier}),
-                min_count,
-                ask_count
-            ).result.response_packet_data.result
-        )
+        data = response.json()
 
-        result_real_fx = {"USDUSD": 1.0}
-        for symbol, price in zip(symbol_list, result['prices']):
-            if symbol == "XDR":
-                symbol = "SDR"
-            result_real_fx[f"USD{symbol}"] = int(price['multiplier']) / int(price['px'])
+        # Extract and format the results
+        result = {}
+        for symbol_data in data.get("price_results", []):
+            symbol = symbol_data.get("symbol")
+            if symbol:
+                multiplier = int(symbol_data.get("multiplier", "1"))
+                px = int(symbol_data.get("px", "0"))
+                price = px / multiplier if multiplier != 0 else 0
 
-        return False, result_real_fx
-    except:
-        logger.exception("Error in get_fx_rate_from_band")
-        return True, None
+                result[symbol] = {
+                    "price": price,
+                    "multiplier": multiplier,
+                    "px": px,
+                    "request_id": symbol_data.get("request_id"),
+                }
+                print(result)
+    except requests.RequestException as e:
+        logger.error(f"Error fetching data from API: {str(e)}")
+        return None
+    except Exception as e:
+        logger.error(f"Unexpected error: {str(e)}")
+        return None
 
+    result_real_fx = {"USDUSD": 1.0}
+    for symbol in symbol_list:
+        result_real_fx[f"USD{symbol}"]=1/float(result[symbol]["price"])
+
+    logger.info(result_real_fx)
+    return False, result_real_fx
 
 def get_coinone_luna_price():
     try:
@@ -154,3 +175,5 @@ def get_binance_luna_price():
         return True, None
 
 # Add any other exchange API functions as needed
+
+get_fx_rate()

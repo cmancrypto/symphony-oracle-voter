@@ -5,8 +5,16 @@ import time
 import logging
 from prometheus_client import Summary, Counter, Gauge, Histogram
 import binance.client
+from dotenv import load_dotenv
 
 # User setup
+
+if os.path.exists('.env'):
+    load_dotenv()
+    print("Environment variables loaded from .env file.")
+else:
+    print(".env file not found.")
+
 
 # Slack webhook
 slackurl = os.getenv("SLACK_URL", "")
@@ -55,7 +63,7 @@ misses = int(os.getenv("MISSES", "0"))
 alertmisses = os.getenv("MISS_ALERTS", "true") == "true"
 debug = os.getenv("DEBUG", "false") == "true"
 metrics_port = os.getenv("METRICS_PORT", "19000")
-band_endpoint = os.getenv("BAND_ENDPOINT", "https://terra-lcd.bandchain.org")
+band_endpoint = os.getenv("BAND_ENDPOINT", "https://laozi1.bandchain.org")
 band_luna_price_params = os.getenv("BAND_LUNA_PRICE_PARAMS", "13,1_000_000_000,10,16")
 
 METRIC_MISSES = Gauge("terra_oracle_misses_total", "Total number of oracle misses")
@@ -72,6 +80,10 @@ METRIC_EXCHANGE_BID_PRICE = Gauge("terra_oracle_exchange_bid_price", "Exchange b
 METRIC_OUTBOUND_ERROR = Counter("terra_oracle_request_errors", "Outbound HTTP request error count", ["remote"])
 METRIC_OUTBOUND_LATENCY = Histogram("terra_oracle_request_latency", "Outbound HTTP request latency", ["remote"])
 
+
+#fx-symbol list to query fx rates for
+#TODO- configure with Symphony actual symbol list
+fx_symbol_list= ["KRW", "EUR", "CNY", "JPY", "XDR", "MNT", "GBP", "INR", "CAD", "CHF", "HKD", "AUD", "SGD", "THB"]
 
 #  binance client
 binance_client = binance.client.Client(binance_key, binance_secret)
