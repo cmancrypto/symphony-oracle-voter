@@ -49,6 +49,17 @@ node = os.getenv("NODE_RPC", "tcp://127.0.0.1:26657")
 terracli = os.getenv("TERRACLI_BIN", "sudo /home/ubuntu/go/bin/terracli")
 # lcd to receive swap price information
 lcd_address = os.getenv("TERRA_LCD", "https://lcd.terra.dev")
+
+#osmosis config
+#Osmosis LCD URL
+osmosis_lcd = os.getenv("OSMOSIS_LCD", "https://lcd.testnet.osmosis.zone/")
+#pool ID
+osmosis_pool_id= os.getenv("OSMOSIS_POOL_ID", "588")
+#Osmosis Base asset (Note/Symphony)
+osmosis_base_asset=os.getenv("OSMOSIS_BASE_ASSET", "ibc/B8435C53F8B5CC87703531FF736508875DF473D0C231E93A3EF5C2C934E562A4")
+#Osmosis quote asset (uosmo)
+osmosis_quote_asset=os.getenv("OSMOSIS_QUOTE_ASSET", "uosmo")
+
 # default coinone weight
 coinone_share_default = float(os.getenv("COINONE_SHARE_DEFAULT", "1.0"))
 # default bithumb weight

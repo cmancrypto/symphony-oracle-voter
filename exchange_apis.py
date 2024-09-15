@@ -1,12 +1,7 @@
 import requests
-import logging
 import asyncio
 import aiohttp
-from pyband.client import Client
-from pyband.obi import PyObi
 from config import *
-import time
-import binance
 from urllib.parse import urlencode
 
 # TODO - remove Terra assets/endpoints, update to Symphony assets
@@ -42,15 +37,13 @@ async def fx_for(symbol_to):
 
 
 def get_fx_rate():
-    symbol_list = ["KRW", "VND", "EUR", "CNY", "JPY", "XDR", "MNT", "GBP", "INR", "CAD", "CHF", "HKD", "AUD", "SGD", "THB"]
-
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-    futures = [fx_for(symbol) for symbol in symbol_list]
+    futures = [fx_for(symbol) for symbol in fx_symbol_list]
     api_result = loop.run_until_complete(asyncio.gather(*futures))
 
     result_real_fx = {"USDUSD": 1.0}
-    for symbol, result in zip(symbol_list, api_result):
+    for symbol, result in zip(fx_symbol_list, api_result):
         if symbol == "XDR":
             symbol = "SDR"
         result_real_fx[f"USD{symbol}"] = float(result["Realtime Currency Exchange Rate"]["5. Exchange Rate"])
@@ -64,16 +57,27 @@ def get_fx_rate_free():
 
 
 ## this is updated, but there's no VND supported
-def get_fx_rate_free_from_band():
-    try:
-        symbol_list = ["KRW", "EUR", "CNY", "JPY", "GBP", "INR", "CAD", "CHF", "HKD", "AUD", "SGD", "THB"]
+def get_fx_rate_from_band():
 
+    error_flag, result = get_band_standard_dataset(fx_symbol_list)
+    if error_flag:
+        return True, []
+
+    result_real_fx = {"USDUSD": 1.0}
+    for symbol in fx_symbol_list:
+        result_real_fx[f"USD{symbol}"]=1/float(result[symbol]["price"])
+
+    return False, result_real_fx
+
+def get_band_standard_dataset(symbols : list):
+    ##TODO- do not use this on mainnet, it can serve very stale prices
+    try:
         base_url = "https://laozi1.bandchain.org/api/oracle/v1"
         oracle_script_id, multiplier, min_count, ask_count = map(int, band_luna_price_params.split(","))
         params= {
             "ask_count": ask_count,
             "min_count": min_count,
-            "symbols": symbol_list,
+            "symbols": symbols,
         }
         # Fetch the latest request ID for the standard dataset
         url = f"{base_url}/request_prices?{urlencode(params, doseq=True)}"
@@ -97,22 +101,18 @@ def get_fx_rate_free_from_band():
                     "px": px,
                     "request_id": symbol_data.get("request_id"),
                 }
-                print(result)
+                return False, result
     except requests.RequestException as e:
         logger.error(f"Error fetching data from API: {str(e)}")
-        return None
+        return True, []
     except Exception as e:
         logger.error(f"Unexpected error: {str(e)}")
-        return None
+        return True, []
 
-    result_real_fx = {"USDUSD": 1.0}
-    for symbol in symbol_list:
-        result_real_fx[f"USD{symbol}"]=1/float(result[symbol]["price"])
-
-    logger.info(result_real_fx)
-    return False, result_real_fx
 
 def get_coinone_luna_price():
+    """
+    To be refactored or re-used as appropriate for Symphony
     try:
         if vwma_period > 1:
             url = "https://api.coinone.co.kr/trades/?currency=luna"
@@ -142,29 +142,11 @@ def get_coinone_luna_price():
     except:
         logger.exception("Error in get_coinone_luna_price")
         return True, None, None, None
-
-
-def get_bithumb_luna_price():
-    # Implementation similar to get_coinone_luna_price but for Bithumb
-    pass
-
-
-def get_gopax_luna_price():
-    # Implementation similar to get_coinone_luna_price but for Gopax
-    pass
-
-
-def get_gdac_luna_price():
-    # Implementation similar to get_coinone_luna_price but for GDAC
-    pass
-
-
-def get_band_luna_price():
-    # Implementation for getting Luna price from Band Protocol
-    pass
-
+    """
 
 def get_binance_luna_price():
+    """
+    To be refactored for Symphony
     try:
         client = binance.client.Client(binance_key, binance_secret)
         avg_price = client.get_avg_price(symbol='LUNAUSDT')
@@ -173,7 +155,39 @@ def get_binance_luna_price():
     except:
         logger.exception("Error in get_binance_luna_price")
         return True, None
-
+    """
 # Add any other exchange API functions as needed
 
-get_fx_rate()
+def get_osmosis_symphony_price():
+
+    ##TODO- do not use this on mainnet, it can serve very stale prices
+    try:
+        url_extension=f"/osmosis/gamm/v1beta1/pools/{osmosis_pool_id}/prices?base_asset_denom={osmosis_base_asset}&quote_asset_denom={osmosis_quote_asset}"
+        url=osmosis_lcd+url_extension
+        response = requests.get(url)
+        response.raise_for_status()  # Raise an exception for bad status codes
+        data = response.json()
+        quote_asset_per = data["spot_price"] #this is a price in uOsmo or quote asset - i.e x uOsmo/note or Osmo/MLD
+
+        symbol="OSMO" #todo - make this in config (cant use the uOsmo)
+
+        error_flag, result = get_band_standard_dataset([symbol])
+
+        if error_flag:
+            return True, []
+
+        quote_asset_price=result[symbol]["price"]
+        print(quote_asset_price)
+        print(quote_asset_per)
+        base_asset_dollar_price= float(float(quote_asset_price)*(float(1)/float(quote_asset_per)))  # ($/Osmo)*1/(MLD/Osmo)
+
+        return False, base_asset_dollar_price
+
+    except requests.RequestException as e:
+        logger.error(f"Error fetching Osmosis Symphony Price: {str(e)}")
+        return True, []
+
+    except Exception as e:
+        logger.error(f"Unexpected error with Osmosis Symphony Price: {str(e)}")
+        return True, []
+
