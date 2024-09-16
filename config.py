@@ -26,7 +26,7 @@ alphavantage_key = os.getenv("ALPHAVANTAGE_KEY", "")
 binance_key = os.getenv("BINANCE_KEY","")
 binance_secret = os.getenv("BINANCE_SECRET","")
 # no using alphavantage
-fx_api_option = os.getenv("FX_API_OPTION", "alphavantage,free_api,band")
+fx_api_option = os.getenv("FX_API_OPTION", "alphavantage,band")
 # stop oracle when price change exceeds stop_oracle_trigger
 stop_oracle_trigger_recent_diverge = float(os.getenv("STOP_ORACLE_RECENT_DIVERGENCE", "999999999999"))
 # stop oracle when price change exceeds stop_oracle_trigger
@@ -48,7 +48,7 @@ node = os.getenv("NODE_RPC", "tcp://127.0.0.1:26657")
 # path to terracli binary
 terracli = os.getenv("TERRACLI_BIN", "sudo /home/ubuntu/go/bin/terracli")
 # lcd to receive swap price information
-lcd_address = os.getenv("TERRA_LCD", "https://lcd.terra.dev")
+lcd_address = os.getenv("SYMPHONY_LCD", "https://symphony-api.kleomedes.network")
 
 #osmosis config
 #Osmosis LCD URL
@@ -94,7 +94,7 @@ METRIC_OUTBOUND_LATENCY = Histogram("terra_oracle_request_latency", "Outbound HT
 
 #fx-symbol list to query fx rates for
 #TODO- configure with Symphony actual symbol list
-fx_symbol_list= ["KRW", "EUR", "CNY", "JPY", "XDR", "MNT", "GBP", "INR", "CAD", "CHF", "HKD", "AUD", "SGD", "THB"]
+fx_symbol_list= ["HKD","INR"]
 
 #  binance client
 binance_client = binance.client.Client(binance_key, binance_secret)

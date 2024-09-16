@@ -11,14 +11,14 @@ logger = logging.getLogger(__name__)
 
 def get_swap_price():
     try:
-        result = requests.get(f"{lcd_address}/oracle/denoms/exchange_rates", timeout=http_timeout).json()
+        result = requests.get(f"{lcd_address}/osmosis/oracle/v1beta1/denoms/exchange_rates", timeout=http_timeout).json()
         return False, result
     except:
         logger.exception("Error in get_swap_price")
         return True, {"result": []}
 
 
-async def fx_for(symbol_to):
+async def get_alphavantage_fx_for(symbol_to):
     try:
         async with aiohttp.ClientSession() as async_session:
             async with async_session.get(
@@ -32,23 +32,31 @@ async def fx_for(symbol_to):
                     }
             ) as response:
                 return await response.json(content_type=None)
-    except:
-        logger.exception("Error in fx_for")
+    except Exception as e:
+        logger.exception(f"Error in fx_for {e}")
 
 
-def get_fx_rate():
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    futures = [fx_for(symbol) for symbol in fx_symbol_list]
-    api_result = loop.run_until_complete(asyncio.gather(*futures))
+def get_alphavantage_fx_rate():
+    try:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        futures = [get_alphavantage_fx_for(symbol) for symbol in fx_symbol_list]
+        api_result = loop.run_until_complete(asyncio.gather(*futures))
+    
+        result_real_fx = {"USDUSD": 1.0}
+        for symbol, result in zip(fx_symbol_list, api_result):
+            if symbol == "XDR":
+                symbol = "SDR"
+            result_real_fx[f"USD{symbol}"] = float(result["Realtime Currency Exchange Rate"]["5. Exchange Rate"])
+            logger.info(result_real_fx)
+        return False, result_real_fx
+    except Exception as e:
+        logger.error(f"Error with alphavantage exchange rate key {e}")
+        err_flag=True
+        result_real_fx=None
+        return err_flag, result_real_fx
 
-    result_real_fx = {"USDUSD": 1.0}
-    for symbol, result in zip(fx_symbol_list, api_result):
-        if symbol == "XDR":
-            symbol = "SDR"
-        result_real_fx[f"USD{symbol}"] = float(result["Realtime Currency Exchange Rate"]["5. Exchange Rate"])
-        logger.info(result_real_fx)
-    return False, result_real_fx
+        
 
 
 def get_fx_rate_free():
@@ -65,7 +73,7 @@ def get_fx_rate_from_band():
 
     result_real_fx = {"USDUSD": 1.0}
     for symbol in fx_symbol_list:
-        result_real_fx[f"USD{symbol}"]=1/float(result[symbol]["price"])
+        result_real_fx[f"USD{symbol}"] = 1/float(result[symbol]["price"])
 
     return False, result_real_fx
 
@@ -101,7 +109,7 @@ def get_band_standard_dataset(symbols : list):
                     "px": px,
                     "request_id": symbol_data.get("request_id"),
                 }
-                return False, result
+        return False, result
     except requests.RequestException as e:
         logger.error(f"Error fetching data from API: {str(e)}")
         return True, []

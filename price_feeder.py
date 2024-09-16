@@ -12,48 +12,40 @@ def get_prices():
         res_fxs = []
         for fx_key in fx_api_option.split(","):
             if fx_key == "alphavantage":
-                res_fxs.append(executor.submit(get_fx_rate))
-            elif fx_key == "free_api":
-                res_fxs.append(executor.submit(get_fx_rate_free))
+                res_fxs.append(executor.submit(get_alphavantage_fx_rate))
             elif fx_key == "band":
                 res_fxs.append(executor.submit(get_fx_rate_from_band))
-        res_coinone = executor.submit(get_coinone_luna_price)
-        res_bithumb = executor.submit(get_bithumb_luna_price)
-        res_gopax = executor.submit(get_gopax_luna_price)
-        res_gdac = executor.submit(get_gdac_luna_price)
-        res_band = executor.submit(get_band_luna_price)
-        res_binance = executor.submit(get_binance_luna_price)
+        res_osmosis = executor.submit(get_osmosis_symphony_price)
+
 
     swap_price_err_flag, swap_price = res_swap.result()
     fx_err_flag, real_fx = combine_fx(res_fxs)
-    coinone_err_flag, coinone_luna_price, coinone_luna_base, coinone_luna_midprice_krw = res_coinone.result()
-    bithumb_err_flag, bithumb_luna_price, bithumb_luna_base, bithumb_luna_midprice_krw = res_bithumb.result()
-    gopax_err_flag, gopax_luna_price, gopax_luna_base, gopax_luna_midprice_krw = res_gopax.result()
-    gdac_err_flag, gdac_luna_price, gdac_luna_base, gdac_luna_midprice_krw = res_gdac.result()
-    binance_err_flag, binance_luna_price = res_binance.result()
-    binance_backup, coinone_backup, bithumb_backup, gdac_backup, gopax_backup = res_band.result()
 
-    all_err_flag = fx_err_flag or coinone_err_flag or swap_price_err_flag
+    osmosis_err_flag, osmosis_symphony_price = res_osmosis.result()
 
+    #left as example
+    #coinone_err_flag, coinone_luna_price, coinone_luna_base, coinone_luna_midprice_krw = res_coinone.result()
+    #binance_backup, coinone_backup, bithumb_backup, gdac_backup, gopax_backup = res_band.result()
+    logger.info(f"fx {fx_err_flag}")
+    logger.info(f"osmosis {osmosis_err_flag}")
+    logger.info(f"swap {swap_price_err_flag}")
+    all_err_flag = fx_err_flag or osmosis_err_flag or swap_price_err_flag
+    logger.info(all_err_flag)
     if not all_err_flag:
-        luna_midprice_krw = weighted_price(
-            [coinone_luna_midprice_krw, bithumb_luna_midprice_krw, gopax_luna_midprice_krw, gdac_luna_midprice_krw],
-            [coinone_share_default, bithumb_share_default, gopax_share_default, gdac_share_default]
-        )
-
+        ##can use weighted price calculations here, but only one price currently
         prices = {}
         for denom in active_candidate:
-            if denom == "ukrw":
-                market_price = float(luna_midprice_krw)
+            if denom == "uusd":
+                market_price = float(osmosis_symphony_price)
             else:
-                market_price = float(binance_luna_price) * real_fx[fx_map[denom]]
+                market_price = float(osmosis_symphony_price) * real_fx[fx_map[denom]]
             prices[denom] = market_price
 
         if len(hardfix_active_set) == 0:
-            active = [denom["denom"] for denom in swap_price["result"]]
+            active = [denom["denom"] for denom in swap_price["exchange_rates"]]
         else:
             active = hardfix_active_set
-
+        logger.info(prices)
         return prices, active
     else:
         return None, None
@@ -81,3 +73,5 @@ def combine_fx(res_fxs):
 
 def weighted_price(prices, weights):
     return sum(p * w for p, w in zip(prices, weights)) / sum(weights)
+
+get_prices()
