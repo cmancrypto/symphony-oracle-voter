@@ -26,15 +26,12 @@ def get_prices():
     #left as example
     #coinone_err_flag, coinone_luna_price, coinone_luna_base, coinone_luna_midprice_krw = res_coinone.result()
     #binance_backup, coinone_backup, bithumb_backup, gdac_backup, gopax_backup = res_band.result()
-    logger.info(f"fx {fx_err_flag}")
-    logger.info(f"osmosis {osmosis_err_flag}")
-    logger.info(f"swap {swap_price_err_flag}")
     all_err_flag = fx_err_flag or osmosis_err_flag or swap_price_err_flag
-    logger.info(all_err_flag)
     if not all_err_flag:
         ##can use weighted price calculations here, but only one price currently
         prices = {}
         for denom in active_candidate:
+            ##TODO - need to check if these are correct prices or if these are 1/price
             if denom == "uusd":
                 market_price = float(osmosis_symphony_price)
             else:
@@ -45,7 +42,6 @@ def get_prices():
             active = [denom["denom"] for denom in swap_price["exchange_rates"]]
         else:
             active = hardfix_active_set
-        logger.info(prices)
         return prices, active
     else:
         return None, None
@@ -55,6 +51,7 @@ def combine_fx(res_fxs):
     all_fx_err_flag = True
 
     for res_fx in res_fxs:
+
         err_flag, fx = res_fx.result()
         all_fx_err_flag = all_fx_err_flag and err_flag
         if not err_flag:
@@ -66,6 +63,7 @@ def combine_fx(res_fxs):
         if fx_combined[key]:
             fx_combined[key] = statistics.median(fx_combined[key])
         else:
+            logger.error(f"error in fx.map with key: {key}")
             fx_combined[key] = None
             all_fx_err_flag = True
 
@@ -73,5 +71,3 @@ def combine_fx(res_fxs):
 
 def weighted_price(prices, weights):
     return sum(p * w for p, w in zip(prices, weights)) / sum(weights)
-
-get_prices()

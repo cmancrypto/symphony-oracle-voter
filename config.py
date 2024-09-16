@@ -26,7 +26,9 @@ alphavantage_key = os.getenv("ALPHAVANTAGE_KEY", "")
 binance_key = os.getenv("BINANCE_KEY","")
 binance_secret = os.getenv("BINANCE_SECRET","")
 # no using alphavantage
-fx_api_option = os.getenv("FX_API_OPTION", "alphavantage,band")
+fx_api_option = os.getenv("FX_API_OPTION", "band")
+##with alphavantage fx_api_option = os.getenv("FX_API_OPTION", "alphavantage,band")
+
 # stop oracle when price change exceeds stop_oracle_trigger
 stop_oracle_trigger_recent_diverge = float(os.getenv("STOP_ORACLE_RECENT_DIVERGENCE", "999999999999"))
 # stop oracle when price change exceeds stop_oracle_trigger
@@ -101,56 +103,20 @@ binance_client = binance.client.Client(binance_key, binance_secret)
 # parameters
 fx_map = {
     "uusd": "USDUSD",
-    "ukrw": "USDKRW",
-    "usdr": "USDSDR",
-    "umnt": "USDMNT",
-    "ueur": "USDEUR",
-    "ujpy": "USDJPY",
-    "ugbp": "USDGBP",
-    "uinr": "USDINR",
-    "ucad": "USDCAD",
-    "uchf": "USDCHF",
-    "uhkd": "USDHKD",
-    "uaud": "USDAUD",
-    "usgd": "USDSGD",
-    "ucny": "USDCNY",
-    "uthb": "USDTHB",
+    "ukhd": "USDHKD", #there is a typo here, but it's onchain also
+    "uvnd": "USDINR", ##this is so we can write USDINR to UVND, this should be removed before mainnet
 }
 active_candidate = [
     "uusd",
-    "ukrw",
-    "usdr",
-    "umnt",
-    "ueur",
-    "ujpy",
-    "ugbp",
-    "uinr",
-    "ucad",
-    "uchf",
-    "uhkd",
-    "uaud",
-    "usgd",
-    "ucny",
-    "uthb",
+    "ukhd",
+    "uvnd"
 ]
 
 # hardfix the active set. does not care about stop_oracle_trigger_recent_diverge
 hardfix_active_set = [
     "uusd",
-    "ukrw",
-    "usdr",
-    "umnt",
-    "ueur",
-    "ujpy",
-    "ugbp",
-    "uinr",
-    "ucad",
-    "uchf",
-    "uhkd",
-    "uaud",
-    "usgd",
-    "ucny",
-    "uthb",
+    "ukhd",
+    "uvnd",
 ]
 
 # denoms for abstain votes. it will vote abstain for all denoms in this list.

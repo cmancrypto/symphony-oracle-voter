@@ -10,12 +10,15 @@ logger = logging.getLogger(__name__)
 
 
 def get_swap_price():
+    err_flag=False
     try:
         result = requests.get(f"{lcd_address}/osmosis/oracle/v1beta1/denoms/exchange_rates", timeout=http_timeout).json()
-        return False, result
     except:
         logger.exception("Error in get_swap_price")
-        return True, {"result": []}
+        result = {"result": []}
+        err_flag=True
+
+    return err_flag,result
 
 
 async def get_alphavantage_fx_for(symbol_to):
@@ -37,6 +40,7 @@ async def get_alphavantage_fx_for(symbol_to):
 
 
 def get_alphavantage_fx_rate():
+    err_flag = False
     try:
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
@@ -49,12 +53,11 @@ def get_alphavantage_fx_rate():
                 symbol = "SDR"
             result_real_fx[f"USD{symbol}"] = float(result["Realtime Currency Exchange Rate"]["5. Exchange Rate"])
             logger.info(result_real_fx)
-        return False, result_real_fx
     except Exception as e:
         logger.error(f"Error with alphavantage exchange rate key {e}")
         err_flag=True
         result_real_fx=None
-        return err_flag, result_real_fx
+    return err_flag, result_real_fx
 
         
 
@@ -69,6 +72,7 @@ def get_fx_rate_from_band():
 
     error_flag, result = get_band_standard_dataset(fx_symbol_list)
     if error_flag:
+        logger.error(f"error with Band fx data")
         return True, []
 
     result_real_fx = {"USDUSD": 1.0}
@@ -168,7 +172,7 @@ def get_binance_luna_price():
 
 def get_osmosis_symphony_price():
 
-    ##TODO- do not use this on mainnet, it can serve very stale prices
+    ##TODO- do not use this on mainnet, it can serve very stale prices because of band
     try:
         url_extension=f"/osmosis/gamm/v1beta1/pools/{osmosis_pool_id}/prices?base_asset_denom={osmosis_base_asset}&quote_asset_denom={osmosis_quote_asset}"
         url=osmosis_lcd+url_extension
