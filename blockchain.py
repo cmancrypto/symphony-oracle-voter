@@ -3,23 +3,33 @@ import json
 import logging
 import requests
 from config import *
+from symphony_oracle_vote import time_request
 
 logger = logging.getLogger(__name__)
 
-##TODO - remove Terra references and update to proper Symphony endpoints
+##TODO - test out actual CLI side
+@time_request('lcd')
 def get_latest_block():
+    err_flag = False
     try:
-        result = requests.get(f"{lcd_address}/blocks/latest", timeout=http_timeout).json()
+        session = requests.session()
+        result = session.get(f"{lcd_address}cosmos/base/tendermint/v1beta1/blocks/latest", timeout=http_timeout).json()
         latest_block_height = int(result["block"]["header"]["height"])
         latest_block_time = result["block"]["header"]["time"]
-        return False, latest_block_height, latest_block_time
     except:
+        METRIC_OUTBOUND_ERROR.labels('lcd').inc()
         logger.exception("Error in get_latest_block")
-        return True, None, None
+        err_flag = True
+        latest_block_height = None
+        latest_block_time = None
+
+    return err_flag, latest_block_height, latest_block_time
+
 
 def get_current_misses():
+    ##TODO - this needs to be tested significantly, schema might have changed
     try:
-        result = requests.get(f"{lcd_address}/oracle/voters/{validator}/miss", timeout=http_timeout).json()
+        result = requests.get(f"{lcd_address}/osmosis/oracle/v1beta1/validators/{validator}/miss", timeout=http_timeout).json()
         misses = int(result["result"])
         height = int(result["height"])
         return misses, height
@@ -28,8 +38,9 @@ def get_current_misses():
         return 0, 0
 
 def get_my_current_prevotes():
+    ##TODO - this needs to be tested significantly, schema might have changed
     try:
-        result = requests.get(f"{lcd_address}/oracle/voters/{validator}/prevotes", timeout=http_timeout).json()
+        result = requests.get(f"{lcd_address}/osmosis/oracle/v1beta1/validators/{validator}/aggregate_prevote", timeout=http_timeout).json()
         return [vote for vote in result["result"] if vote["voter"] == validator]
     except:
         logger.exception("Error in get_my_current_prevotes")
