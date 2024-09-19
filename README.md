@@ -1,30 +1,28 @@
-# Terra_oracle_voter
-Oracle autovoting script for Terra(v0.3.0+) oracle by B-Harvest
+# Symphony_oracle_voter
+Fork of the Oracle autovoting script by B-Harvest (https://github.com/b-harvest/terra_oracle_voter_deprecated) - updated for Symphony. 
+
+Only price_feeder.py and exchange_apis.py have been completed. 
 
 ## Disclaimer
-The script is in highly experimental state, and users should aware that all result from the terra_oracle_voter script is responsible to the user himself/herself.
+The script is in highly experimental state, as a result, no liability exists on behalf of the contributors and all users use the script at their own risk. 
 
 ## Language
-Python3.8 Recommended
+Python3.9 Recommended
 
 ## Preliminary
-The server running this script should run terrad with synced status.
+The server running this script should run symphonyd with synced status.
+
+### Systemctl
+Copy the oracle.service file to /etc/systemd/system and change the location of the working directory and oracle file accordingly
+enable the service with systemctl enable oracle
+start the service with systemctl start oracle
 
 ## New features
-1) error handling
-- when coinone price, last swap price, or fx rate is unavailable, vote -1 for all oracle
-- when coinone bid-ask spread is wider than `bid_ask_spread_max`, vote -1 for all oracle
-- when other exchange price than coinone is unavailable, exclude those prices from averaging
-- when calculated oracle price and last oracle price differ more than `stop_oracle_trigger_recent_diverge`, vote -1 for the denom
-2) period-customized vwma(volume weighted moving average) for coinone market price
-3) customized weights for each exchange's market price
-4) use LCD endpoint to get recent oracle prices
-
-* Thank you Peter(ChainLayer.io) for reviewing and testing the script!
 
 
-## Configure(in terra_oracle_vote.py)
-### user setup
+
+## Configure(in config.py)
+### OLD CONFIG - needs to be updated
 telegram_token = ""\
 telegram_chat_id = ""\
 stop_oracle_trigger_recent_diverge = 0.1 # stop oracle when price change exceeds stop_oracle_trigger\
@@ -59,7 +57,4 @@ hardfix_active_set = ["uusd","ukrw","usdr","umnt","ueur","ujpy","ugbp","uinr","u
 chain_id = "columbus-4" # chain id\
 round_block_num = 5.0 # number of blocks for each oracle round
 
-### Systemctl
-Copy the oracle.service file to /etc/systemd/system and change the location of the working directory and oracle file accordingly
-enable the service with systemctl enable oracle
-start the service with systemctl start oracle
+
