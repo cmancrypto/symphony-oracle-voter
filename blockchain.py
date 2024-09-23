@@ -3,7 +3,7 @@ import json
 import logging
 import requests
 from config import *
-from symphony_oracle_vote import time_request
+from alerts import time_request
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +13,7 @@ def get_latest_block():
     err_flag = False
     try:
         session = requests.session()
-        result = session.get(f"{lcd_address}cosmos/base/tendermint/v1beta1/blocks/latest", timeout=http_timeout).json()
+        result = session.get(f"{lcd_address}/cosmos/base/tendermint/v1beta1/blocks/latest", timeout=http_timeout).json()
         latest_block_height = int(result["block"]["header"]["height"])
         latest_block_time = result["block"]["header"]["time"]
     except:
@@ -27,7 +27,6 @@ def get_latest_block():
 
 
 def get_current_misses():
-    ##TODO - this needs to be tested significantly, schema might have changed
     try:
         result = requests.get(f"{lcd_address}/osmosis/oracle/v1beta1/validators/{validator}/miss", timeout=http_timeout).json()
         misses = int(result["result"])
@@ -47,6 +46,8 @@ def get_my_current_prevotes():
         return []
 
 def broadcast_prevote(hash):
+    #this takes the this_hash[denom]  from process votes
+    logger.info("Prevoting... ")
     messages = [
         {
             "type": "oracle/MsgExchangeRatePrevote",

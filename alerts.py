@@ -4,6 +4,10 @@ from config import *
 
 logger = logging.getLogger(__name__)
 
+def time_request(remote):
+    """Returns a decorator that measures execution time."""
+    return METRIC_OUTBOUND_LATENCY.labels(remote).time()
+
 def telegram(message):
     if not telegram_token:
         return
