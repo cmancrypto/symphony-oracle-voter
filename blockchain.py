@@ -56,10 +56,9 @@ def run_symphonyd_command(command: List[str], input_data: Optional[str] = None) 
     except subprocess.CalledProcessError as e:
         logger.error(f"Command failed: {e.cmd}")
         logger.error(f"Error output: {e.stderr}")
-        raise
     except json.JSONDecodeError:
         logger.error(f"Failed to parse command output as JSON: {result.stdout}")
-        raise
+
 
 def aggregate_exchange_rate_prevote(salt: str, exchange_rates: str, from_address: str, validator: Optional[str] = None) -> dict:
     command = [
