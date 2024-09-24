@@ -41,14 +41,13 @@ feeder = os.getenv("FEEDER_ADDRESS", "")
 validator = os.getenv("VALIDATOR_ADDRESS", "")
 key_name = os.getenv("KEY_NAME", "")
 key_password = os.getenv("KEY_PASSWORD", "").encode()
-fee_denom = os.getenv("FEE_DENOM", "ukrw")
+fee_denom = os.getenv("FEE_DENOM", "note")
 fee_gas = os.getenv("FEE_GAS", "250000")
 fee_amount = os.getenv("FEE_AMOUNT", "500000")
-home_cli = os.getenv("HOME_CLI", "/home/ubuntu/.terracli")
+
 # node to broadcast the txs
 node = os.getenv("NODE_RPC", "tcp://127.0.0.1:26657")
-# path to terracli binary
-terracli = os.getenv("TERRACLI_BIN", "sudo /home/ubuntu/go/bin/terracli")
+
 # lcd to receive swap price information
 lcd_address = os.getenv("SYMPHONY_LCD", "https://symphony-api.kleomedes.network")
 
@@ -128,7 +127,7 @@ abstain_set = [
     #"umnt"
 ]
 
-chain_id = os.getenv("CHAIN_ID", "columbus-4")
+chain_id = os.getenv("CHAIN_ID", "symphony-testnet-3")
 round_block_num = 5.0
 
 # set last update time
