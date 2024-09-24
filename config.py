@@ -25,7 +25,7 @@ alphavantage_key = os.getenv("ALPHAVANTAGE_KEY", "")
 # https://python-binance.readthedocs.io/
 binance_key = os.getenv("BINANCE_KEY","")
 binance_secret = os.getenv("BINANCE_SECRET","")
-# no using alphavantage
+# API option with Alphavantage removed - for testnet only
 fx_api_option = os.getenv("FX_API_OPTION", "band")
 ##with alphavantage fx_api_option = os.getenv("FX_API_OPTION", "alphavantage,band")
 
@@ -113,6 +113,7 @@ active_candidate = [
 ]
 
 # hardfix the active set. does not care about stop_oracle_trigger_recent_diverge
+# this doesn't do anything anymore?
 hardfix_active_set = [
     "uusd",
     "ukhd",

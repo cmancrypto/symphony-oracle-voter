@@ -1,5 +1,6 @@
 import subprocess
 import json
+from typing import List, Optional
 import logging
 import requests
 from config import *
@@ -45,92 +46,42 @@ def get_my_current_prevotes():
         logger.exception("Error in get_my_current_prevotes")
         return []
 
-def broadcast_prevote(hash):
-    #this takes the this_hash[denom]  from process votes
-    logger.info("Prevoting... ")
-    messages = [
-        {
-            "type": "oracle/MsgExchangeRatePrevote",
-            "value": {
-                "hash": str(hash[denom]),
-                "denom": str(denom),
-                "feeder": feeder,
-                "validator": validator
-            }
-        } for denom in hash
-    ]
-    return broadcast_messages(messages)
+def run_symphonyd_command(command: List[str], input_data: Optional[str] = None) -> dict:
+    try:
+        if input_data:
+            result = subprocess.run(command, input=input_data.encode(), capture_output=True, text=True, check=True)
+        else:
+            result = subprocess.run(command, capture_output=True, text=True, check=True)
+        return json.loads(result.stdout)
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Command failed: {e.cmd}")
+        logger.error(f"Error output: {e.stderr}")
+        raise
+    except json.JSONDecodeError:
+        logger.error(f"Failed to parse command output as JSON: {result.stdout}")
+        raise
 
-def broadcast_all(vote_price, vote_salt, prevote_hash):
-    messages = [
-        {
-            "type": "oracle/MsgExchangeRateVote",
-            "value": {
-                "exchange_rate": str(vote_price[denom]),
-                "salt": str(vote_salt[denom]),
-                "denom": denom,
-                "feeder": feeder,
-                "validator": validator
-            }
-        } for denom in vote_price
-    ] + [
-        {
-            "type": "oracle/MsgExchangeRatePrevote",
-            "value": {
-                "hash": str(prevote_hash[denom]),
-                "denom": str(denom),
-                "feeder": feeder,
-                "validator": validator
-            }
-        } for denom in prevote_hash
-    ]
-    return broadcast_messages(messages)
-
-def broadcast_messages(messages):
-    tx_json = {
-        "type": "core/StdTx",
-        "value": {
-            "msg": messages,
-            "fee": {
-                "amount": [
-                    {
-                        "denom": fee_denom,
-                        "amount": fee_amount
-                    }
-                ],
-                "gas": fee_gas
-            },
-            "signatures": [],
-            "memo": ""
-        }
-    }
-
-    logger.info("Signing...")
-    json.dump(tx_json, open("tx_oracle_prevote.json", 'w'))
-
-    cmd_output = subprocess.check_output([
-        terracli,
-        "tx", "sign", "tx_oracle_prevote.json",
-        "--from", key_name,
+def aggregate_exchange_rate_prevote(salt: str, exchange_rates: str, from_address: str, validator: Optional[str] = None) -> dict:
+    command = [
+        "symphonyd", "tx", "oracle", "aggregate-prevote", salt, exchange_rates,
+        "--from", from_address,
         "--chain-id", chain_id,
-        "--home", home_cli,
-        "--node", node
-    ], input=key_password + b'\n' + key_password + b'\n').decode()
-
-    tx_json_signed = json.loads(cmd_output)
-    json.dump(tx_json_signed, open("tx_oracle_prevote_signed.json", 'w'))
-
-    logger.info("Broadcasting...")
-    cmd_output = subprocess.check_output([
-        terracli,
-        "tx", "broadcast", "tx_oracle_prevote_signed.json",
-        "--output", "json",
-        "--from", key_name,
-        "--chain-id", chain_id,
-        "--home", home_cli,
         "--node", node,
-    ], input=key_password + b'\n' + key_password + b'\n').decode()
-
-    return json.loads(cmd_output)
+        "--output", "json"
+    ]
+    if validator:
+        command.append(validator)
+    return run_symphonyd_command(command)
+def aggregate_exchange_rate_vote(salt: str, exchange_rates: str, from_address: str, validator: Optional[str] = None) -> dict:
+    command = [
+        "symphonyd", "tx", "oracle", "aggregate-vote", salt, exchange_rates,
+        "--from", from_address,
+        "--chain-id", chain_id,
+        "--node", node,
+        "--output", "json"
+    ]
+    if validator:
+        command.append(validator)
+    return run_symphonyd_command(command)
 
 # Add any other blockchain-related functions
