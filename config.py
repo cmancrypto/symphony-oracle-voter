@@ -8,7 +8,9 @@ import binance.client
 from dotenv import load_dotenv
 
 # User setup
-
+"""
+Create a .env with the environment variables below if required, otherwise set them in os environment or use the defaults. 
+"""
 if os.path.exists('.env'):
     load_dotenv()
     print("Environment variables loaded from .env file.")
