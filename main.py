@@ -44,11 +44,12 @@ def main():
                                                                                   last_hash, last_active, height)
                     last_prevoted_round = next_height_round
 
-                currentmisses, currentheight = get_current_misses()
-                METRIC_HEIGHT.set(currentheight)
+                currentmisses = get_current_misses()
+                #METRIC_HEIGHT.set(currentheight)
                 METRIC_MISSES.set(currentmisses)
-
-                if currentheight > 0:
+                # turned off the misses height and misses alerting until can work out if the height is current height or something from the old miss API
+                #if its nothing special, can use current block height?
+                """if currentheight > 0:
                     misspercentage = round(float(currentmisses) / float(currentheight) * 100, 2)
                     logger.info(f"Current miss percentage: {misspercentage}%")
 
@@ -59,6 +60,7 @@ def main():
                         telegram(alarm_content)
                         slack(alarm_content)
                     misses = currentmisses
+                    """
             else:
                 logger.info(f"{height}: wait {num_blocks_till_next_round} blocks until this round ends...")
 

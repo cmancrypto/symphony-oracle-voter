@@ -1,11 +1,13 @@
 import logging
 import time
 import hashlib
+from hash_handler import get_aggregate_vote_hash
 from config import *
 from blockchain import get_my_current_prevotes, broadcast_prevote, broadcast_all
 
 logger = logging.getLogger(__name__)
 
+#TODO - refactor after testing blockchain functions to determine what it looks like on chain - i.e do we need to compare hashes.
 
 def process_votes(prices, active, last_price, last_salt, last_hash, last_active, height):
     this_price = {}
@@ -13,9 +15,10 @@ def process_votes(prices, active, last_price, last_salt, last_hash, last_active,
     this_salt = {}
 
     for denom in active:
-        this_price[denom] = str("{0:.18f}".format(prices[denom]))
-        this_salt[denom] = get_salt(str(time.time()))
-        this_hash[denom] = get_hash(this_salt[denom], this_price[denom], denom, validator)
+        #TODO - make the prices into a string in here, we dont need individual salts/hashes, we only need one salt for all and aggregate hash
+        this_aggregate_price = None #TODO - fix this with actual price
+        this_salt = get_salt(str(time.time()))
+        this_hash = get_aggregate_vote_hash(this_salt,prices,validator)
 
     logger.info(f"Start voting on height {height + 1}")
 
@@ -30,7 +33,7 @@ def process_votes(prices, active, last_price, last_salt, last_hash, last_active,
         logger.info("Broadcast prevotes only...")
         broadcast_prevote(this_hash)
 
-    return this_price, this_salt, list(this_hash.values()), active
+    return this_price, this_salt, this_hash, active
 
 
 def check_hash_match(last_hash, my_current_prevotes):

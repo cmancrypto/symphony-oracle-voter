@@ -30,9 +30,10 @@ def get_latest_block():
 def get_current_misses():
     try:
         result = requests.get(f"{lcd_address}/osmosis/oracle/v1beta1/validators/{validator}/miss", timeout=http_timeout).json()
-        misses = int(result["result"])
-        height = int(result["height"])
-        return misses, height
+        misses = int(result["miss_counter"])
+        #TODO - fix the height
+        #height = int(result["height"]) - this doesn't appear supported anymore
+        return misses #, height
     except:
         logger.exception("Error in get_current_misses")
         return 0, 0
@@ -64,8 +65,8 @@ def aggregate_exchange_rate_prevote(salt: str, exchange_rates: str, from_address
     command = [
         "symphonyd", "tx", "oracle", "aggregate-prevote", salt, exchange_rates,
         "--from", from_address,
-        "--chain-id", chain_id,
-        "--node", node,
+        #"--chain-id", chain_id,
+        #"--node", node,
         "--output", "json"
     ]
     if validator:
@@ -75,8 +76,8 @@ def aggregate_exchange_rate_vote(salt: str, exchange_rates: str, from_address: s
     command = [
         "symphonyd", "tx", "oracle", "aggregate-vote", salt, exchange_rates,
         "--from", from_address,
-        "--chain-id", chain_id,
-        "--node", node,
+        #"--chain-id", chain_id,
+        #"--node", node,
         "--output", "json"
     ]
     if validator:
@@ -84,3 +85,5 @@ def aggregate_exchange_rate_vote(salt: str, exchange_rates: str, from_address: s
     return run_symphonyd_command(command)
 
 # Add any other blockchain-related functions
+
+print(get_my_current_prevotes())
