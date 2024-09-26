@@ -47,18 +47,33 @@ def get_my_current_prevotes():
         logger.exception("Error in get_my_current_prevotes")
         return []
 
-def run_symphonyd_command(command: List[str], input_data: Optional[str] = None) -> dict:
+def run_symphonyd_command(command: List[str]) -> dict:
     try:
-        if input_data:
-            result = subprocess.run(command, input=input_data.encode(), capture_output=True, text=True, check=True)
-        else:
-            result = subprocess.run(command, capture_output=True, text=True, check=True)
-        return json.loads(result.stdout)
-    except subprocess.CalledProcessError as e:
-        logger.error(f"Command failed: {e.cmd}")
-        logger.error(f"Error output: {e.stderr}")
-    except json.JSONDecodeError:
-        logger.error(f"Failed to parse command output as JSON: {result.stdout}")
+        # Start the command
+        process = subprocess.Popen(
+            command,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+        stdout, stderr = process.communicate(input=f"{key_password}\n")
+
+        if process.returncode != 0:
+            logger.error(f"Command failed with return code {process.returncode}")
+            logger.error(f"Error output: {stderr}")
+            raise subprocess.CalledProcessError(process.returncode, command, stdout, stderr)
+
+            # Try to parse the output as JSON
+        try:
+            return json.loads(stdout)
+        except json.JSONDecodeError:
+            logger.error(f"Failed to parse command output as JSON: {stdout}")
+            return stdout
+
+    except Exception as e:
+            logger.error(f"An error occurred with subprocess: {str(e)}")
+
 
 
 def aggregate_exchange_rate_prevote(salt: str, exchange_rates: str, from_address: str, validator: Optional[str] = None) -> dict:
@@ -67,7 +82,8 @@ def aggregate_exchange_rate_prevote(salt: str, exchange_rates: str, from_address
         "--from", from_address,
         #"--chain-id", chain_id,
         #"--node", node,
-        "--output", "json"
+        "--output", "json",
+        "-y" #skip confirmation
     ]
     if validator:
         command.append(validator)
@@ -78,12 +94,11 @@ def aggregate_exchange_rate_vote(salt: str, exchange_rates: str, from_address: s
         "--from", from_address,
         #"--chain-id", chain_id,
         #"--node", node,
-        "--output", "json"
+        "--output", "json",
+        "-y" #skip confirmation
     ]
     if validator:
         command.append(validator)
     return run_symphonyd_command(command)
 
 # Add any other blockchain-related functions
-
-print(get_my_current_prevotes())

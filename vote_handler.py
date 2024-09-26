@@ -3,7 +3,7 @@ import time
 import hashlib
 from hash_handler import get_aggregate_vote_hash
 from config import *
-from blockchain import get_my_current_prevotes, broadcast_prevote, broadcast_all
+from blockchain import get_my_current_prevotes, aggregate_exchange_rate_prevote, aggregate_exchange_rate_vote
 
 logger = logging.getLogger(__name__)
 
@@ -14,19 +14,17 @@ def process_votes(prices, active, last_price, last_salt, last_hash, last_active,
     this_hash = {}
     this_salt = {}
 
-    for denom in active:
-        #TODO - make the prices into a string in here, we dont need individual salts/hashes, we only need one salt for all and aggregate hash
-        this_aggregate_price = None #TODO - fix this with actual price
-        this_salt = get_salt(str(time.time()))
-        this_hash = get_aggregate_vote_hash(this_salt,prices,validator)
+    this_aggregate_price = prices
+    this_salt = get_salt(str(time.time()))
+    this_hash = get_aggregate_vote_hash(this_salt,prices,validator)
 
     logger.info(f"Start voting on height {height + 1}")
 
     my_current_prevotes = get_my_current_prevotes()
-    hash_match_flag = check_hash_match(last_hash, my_current_prevotes)
+    hash_match_flag = check_hash_match(last_hash, my_current_prevotes) #TODO - update this to new hashing function
 
     if hash_match_flag:
-        logger.info("Broadcast votes/prevotes at the same time...")
+        logger.info("Broadcast votes/prevotes at the same time...") #TODO - the current CLI config DOESNT allow to do both at same time
         broadcast_all(last_price, last_salt, this_hash)
         METRIC_VOTES.inc()
     else:

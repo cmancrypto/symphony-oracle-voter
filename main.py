@@ -5,7 +5,7 @@ import logging
 from prometheus_client import start_http_server
 
 from config import *
-from price_feeder import get_prices
+from price_feeder import get_prices, format_prices
 from vote_handler import process_votes
 from blockchain import get_latest_block, get_current_misses
 from alerts import telegram, slack
@@ -38,6 +38,8 @@ def main():
             if next_height_round > last_prevoted_round and (
                     num_blocks_till_next_round == 0 or num_blocks_till_next_round > 3):
                 prices, active = get_prices()
+
+                prices = format_prices(prices)
 
                 if prices:
                     last_price, last_salt, last_hash, last_active = process_votes(prices, active, last_price, last_salt,

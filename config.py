@@ -103,9 +103,9 @@ fx_symbol_list= ["HKD","INR"]
 binance_client = binance.client.Client(binance_key, binance_secret)
 # parameters
 fx_map = {
-    "uusd": "USDUSD",
-    "ukhd": "USDHKD", #there is a typo here, but it's onchain also
-    "uvnd": "USDINR", ##this is so we can write USDINR to UVND, this should be removed before mainnet
+    "uusd": "USD",
+    "ukhd": "HKD", #there is a typo here, but it's onchain also
+    "uvnd": "INR", ##this is so we can write USDINR to UVND, this should be removed before mainnet
 }
 active_candidate = [
     "uusd",
@@ -114,7 +114,7 @@ active_candidate = [
 ]
 
 # hardfix the active set. does not care about stop_oracle_trigger_recent_diverge
-# this doesn't do anything anymore?
+
 hardfix_active_set = [
     "uusd",
     "ukhd",

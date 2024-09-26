@@ -71,3 +71,10 @@ def combine_fx(res_fxs):
 
 def weighted_price(prices, weights):
     return sum(p * w for p, w in zip(prices, weights)) / sum(weights)
+
+def format_prices(prices) -> str :
+    formatted_prices = []
+    for denom, price in prices.items():
+        formatted_prices.append(f"{price}{denom}")
+    return ','.join(formatted_prices)
+

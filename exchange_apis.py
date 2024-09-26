@@ -47,11 +47,11 @@ def get_alphavantage_fx_rate():
         futures = [get_alphavantage_fx_for(symbol) for symbol in fx_symbol_list]
         api_result = loop.run_until_complete(asyncio.gather(*futures))
     
-        result_real_fx = {"USDUSD": 1.0}
+        result_real_fx = {"USD": 1.0}
         for symbol, result in zip(fx_symbol_list, api_result):
             if symbol == "XDR":
                 symbol = "SDR"
-            result_real_fx[f"USD{symbol}"] = float(result["Realtime Currency Exchange Rate"]["5. Exchange Rate"])
+            result_real_fx[f"{symbol}"] = float(result["Realtime Currency Exchange Rate"]["5. Exchange Rate"])
             logger.info(result_real_fx)
     except Exception as e:
         logger.error(f"Error with alphavantage exchange rate key {e}")
@@ -75,9 +75,9 @@ def get_fx_rate_from_band():
         logger.error(f"error with Band fx data")
         return True, []
 
-    result_real_fx = {"USDUSD": 1.0}
+    result_real_fx = {"USD": 1.0}
     for symbol in fx_symbol_list:
-        result_real_fx[f"USD{symbol}"] = 1/float(result[symbol]["price"])
+        result_real_fx[f"{symbol}"] = 1/float(result[symbol]["price"])
 
     return False, result_real_fx
 
@@ -189,8 +189,6 @@ def get_osmosis_symphony_price():
             return True, []
 
         quote_asset_price=result[symbol]["price"]
-        print(quote_asset_price)
-        print(quote_asset_per)
         base_asset_dollar_price= float(float(quote_asset_price)*(float(1)/float(quote_asset_per)))  # ($/Osmo)*1/(MLD/Osmo)
 
         return False, base_asset_dollar_price
