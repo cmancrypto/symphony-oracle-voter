@@ -38,13 +38,13 @@ def get_current_misses():
         logger.exception("Error in get_current_misses")
         return 0, 0
 
-def get_my_current_prevotes():
+def get_my_current_prevote_hash():
     ##TODO - this needs to be tested significantly, schema might have changed
     try:
         result = requests.get(f"{lcd_address}/osmosis/oracle/v1beta1/validators/{validator}/aggregate_prevote", timeout=http_timeout).json()
-        return [vote for vote in result["result"] if vote["voter"] == validator]
-    except:
-        logger.exception("Error in get_my_current_prevotes")
+        return result["aggregate_prevote"]["hash"]
+    except Exception as e:
+        logger.exception(f"Error in get_my_current_prevotes {e}")
         return []
 
 def run_symphonyd_command(command: List[str]) -> dict:

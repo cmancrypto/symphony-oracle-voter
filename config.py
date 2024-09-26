@@ -39,8 +39,10 @@ stop_oracle_trigger_exchange_diverge = float(os.getenv("STOP_ORACLE_EXCHANGE_DIV
 bid_ask_spread_max = float(os.getenv("BID_ASK_SPREAD_MAX", "0.05"))
 # oracle feeder address
 feeder = os.getenv("FEEDER_ADDRESS", "")
-# validator address
+# validator address - symphonyvaloper
 validator = os.getenv("VALIDATOR_ADDRESS", "")
+#validator_account_address
+validator_account= os.getenv("VALIDATOR_ACC_ADDRESS")
 key_name = os.getenv("KEY_NAME", "")
 key_password = os.getenv("KEY_PASSWORD", "").encode()
 fee_denom = os.getenv("FEE_DENOM", "note")
