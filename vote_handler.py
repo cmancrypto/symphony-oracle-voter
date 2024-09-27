@@ -3,7 +3,7 @@ import time
 import hashlib
 from hash_handler import get_aggregate_vote_hash
 from config import *
-from blockchain import get_my_current_prevotes, aggregate_exchange_rate_prevote, aggregate_exchange_rate_vote
+from blockchain import get_my_current_prevote_hash, aggregate_exchange_rate_prevote, aggregate_exchange_rate_vote
 
 logger = logging.getLogger(__name__)
 
@@ -14,22 +14,40 @@ def process_votes(prices, active, last_price, last_salt, last_hash, last_active,
     this_hash = {}
     this_salt = {}
 
-    this_aggregate_price = prices
+    this_price = prices
     this_salt = get_salt(str(time.time()))
-    this_hash = get_aggregate_vote_hash(this_salt,prices,validator)
+    this_hash = get_aggregate_vote_hash(this_salt,this_price,validator)
 
     logger.info(f"Start voting on height {height + 1}")
 
-    my_current_prevotes = get_my_current_prevotes()
-    hash_match_flag = check_hash_match(last_hash, my_current_prevotes) #TODO - update this to new hashing function
+    my_current_prevotes = get_my_current_prevote_hash()
+    hash_match_flag = check_hash_match(last_hash, my_current_prevotes)
+
+    if feeder:
+        from_account = feeder
+    elif validator_account:
+        from_account = validator_account
+    else:
+        logger.error("Configure feeder or validator_acc for submitting tx")
+        raise
+
 
     if hash_match_flag:
-        logger.info("Broadcast votes/prevotes at the same time...") #TODO - the current CLI config DOESNT allow to do both at same time
-        broadcast_all(last_price, last_salt, this_hash)
+        logger.info("Broadcast votes/prevotes at the same time...")
+        if feeder:
+            aggregate_exchange_rate_prevote(this_salt,this_price,from_account,validator)
+            aggregate_exchange_rate_vote(last_salt,last_price,from_account,validator)
+        else:
+            aggregate_exchange_rate_prevote(this_salt,this_price,from_account)
+            aggregate_exchange_rate_vote(last_salt, last_price, from_account)
         METRIC_VOTES.inc()
     else:
+        if feeder:
+            aggregate_exchange_rate_prevote(this_salt,this_price,from_account,validator)
+        else:
+            aggregate_exchange_rate_prevote(this_salt,this_price,from_account)
         logger.info("Broadcast prevotes only...")
-        broadcast_prevote(this_hash)
+
 
     return this_price, this_salt, this_hash, active
 
@@ -38,10 +56,11 @@ def check_hash_match(last_hash, my_current_prevotes):
     if not last_hash:
         return False
 
-    for vote_hash in last_hash:
-        if not any(prevote["hash"] == vote_hash for prevote in my_current_prevotes):
-            return False
-    return True
+    if last_hash == my_current_prevotes:
+        return True
+    else:
+        return False
+
 
 
 def get_salt(string):
