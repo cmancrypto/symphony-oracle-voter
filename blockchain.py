@@ -44,7 +44,7 @@ def get_my_current_prevote_hash():
         result = requests.get(f"{lcd_address}/osmosis/oracle/v1beta1/validators/{validator}/aggregate_prevote", timeout=http_timeout).json()
         return result["aggregate_prevote"]["hash"]
     except Exception as e:
-        logger.exception(f"Error in get_my_current_prevotes {e}")
+        logger.info(f"No prevotes found")
         return []
 
 def run_symphonyd_command(command: List[str]) -> dict:
@@ -85,7 +85,7 @@ def aggregate_exchange_rate_prevote(salt: str, exchange_rates: str, from_address
         #"--node", node,
         "--output", "json",
         "-y", #skip confirmation
-        "--fees", "30000note"
+        "--fees", "50000note"
 
     ]
     if validator:
@@ -99,7 +99,7 @@ def aggregate_exchange_rate_vote(salt: str, exchange_rates: str, from_address: s
         #"--node", node,
         "--output", "json",
         "-y", #skip confirmation
-        "--fees", "30000note"
+        "--fees", "50000note"
     ]
     if validator:
         command.append(validator)
