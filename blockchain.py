@@ -83,7 +83,9 @@ def aggregate_exchange_rate_prevote(salt: str, exchange_rates: str, from_address
         #"--chain-id", chain_id,
         #"--node", node,
         "--output", "json",
-        "-y" #skip confirmation
+        "-y", #skip confirmation
+        "--fees", "50000note"
+
     ]
     if validator:
         command.append(validator)
@@ -95,7 +97,8 @@ def aggregate_exchange_rate_vote(salt: str, exchange_rates: str, from_address: s
         #"--chain-id", chain_id,
         #"--node", node,
         "--output", "json",
-        "-y" #skip confirmation
+        "-y", #skip confirmation
+        "--fees", "50000note"
     ]
     if validator:
         command.append(validator)

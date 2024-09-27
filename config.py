@@ -43,7 +43,7 @@ validator = os.getenv("VALIDATOR_ADDRESS", "")
 #validator_account_address
 validator_account= os.getenv("VALIDATOR_ACC_ADDRESS")
 key_name = os.getenv("KEY_NAME", "")
-key_password = os.getenv("KEY_PASSWORD", "").encode()
+key_password = os.getenv("KEY_PASSWORD", "")
 fee_denom = os.getenv("FEE_DENOM", "note")
 fee_gas = os.getenv("FEE_GAS", "250000")
 fee_amount = os.getenv("FEE_AMOUNT", "500000")
