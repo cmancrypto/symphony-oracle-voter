@@ -4,7 +4,6 @@ import os
 import time
 import logging
 from prometheus_client import Summary, Counter, Gauge, Histogram
-import binance.client
 from dotenv import load_dotenv
 
 # User setup
@@ -101,8 +100,7 @@ METRIC_OUTBOUND_LATENCY = Histogram("terra_oracle_request_latency", "Outbound HT
 #TODO- configure with Symphony actual symbol list
 fx_symbol_list= ["HKD","INR"]
 
-#  binance client
-binance_client = binance.client.Client(binance_key, binance_secret)
+
 # parameters
 fx_map = {
     "uusd": "USD",
