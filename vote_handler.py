@@ -39,9 +39,6 @@ def process_votes(prices, active, last_price, last_salt, last_hash, last_active,
             time.sleep(2)  # this is so that we can make sure they have different account sequences, it doesn't like 2tx in same block
             aggregate_exchange_rate_vote(last_salt, last_price, from_account, validator)
 
-
-
-
         else:
 
             aggregate_exchange_rate_prevote(this_salt, this_price, from_account)
@@ -63,11 +60,15 @@ def process_votes(prices, active, last_price, last_salt, last_hash, last_active,
 
 def check_hash_match(last_hash, my_current_prevotes):
     if not last_hash:
+        logger.info("No last hash")
         return False
 
     if last_hash == my_current_prevotes:
+        logger.info("Hash match")
         return True
+
     else:
+        logger.info(f"Hash failed to match {last_hash} vs {my_current_prevotes} ")
         return False
 
 

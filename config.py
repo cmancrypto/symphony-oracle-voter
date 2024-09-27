@@ -130,7 +130,7 @@ abstain_set = [
 ]
 
 chain_id = os.getenv("CHAIN_ID", "symphony-testnet-3")
-round_block_num = 5.0
+round_block_num = 7.0
 
 # set last update time
 last_height = 0

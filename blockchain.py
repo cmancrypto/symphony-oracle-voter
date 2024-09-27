@@ -64,6 +64,7 @@ def run_symphonyd_command(command: List[str]) -> dict:
             logger.error(f"Error output: {stderr}")
             raise subprocess.CalledProcessError(process.returncode, command, stdout, stderr)
 
+        logger.info(stdout)
             # Try to parse the output as JSON
         try:
             return json.loads(stdout)
@@ -84,7 +85,7 @@ def aggregate_exchange_rate_prevote(salt: str, exchange_rates: str, from_address
         #"--node", node,
         "--output", "json",
         "-y", #skip confirmation
-        "--fees", "50000note"
+        "--fees", "30000note"
 
     ]
     if validator:
@@ -98,7 +99,7 @@ def aggregate_exchange_rate_vote(salt: str, exchange_rates: str, from_address: s
         #"--node", node,
         "--output", "json",
         "-y", #skip confirmation
-        "--fees", "50000note"
+        "--fees", "30000note"
     ]
     if validator:
         command.append(validator)
