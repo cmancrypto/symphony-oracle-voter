@@ -81,13 +81,10 @@ def aggregate_exchange_rate_prevote(salt: str, exchange_rates: str, from_address
     command = [
         "symphonyd", "tx", "oracle", "aggregate-prevote", salt, exchange_rates,
         "--from", from_address,
-        #"--chain-id", chain_id,
-        #"--node", node,
         "--output", "json",
         "-y", #skip confirmation
-        "--fees", "50000note"
-
     ]
+    command.extend(tx_config)
     if validator:
         command.append(validator)
     return run_symphonyd_command(command)
@@ -95,12 +92,10 @@ def aggregate_exchange_rate_vote(salt: str, exchange_rates: str, from_address: s
     command = [
         "symphonyd", "tx", "oracle", "aggregate-vote", salt, exchange_rates,
         "--from", from_address,
-        #"--chain-id", chain_id,
-        #"--node", node,
         "--output", "json",
         "-y", #skip confirmation
-        "--fees", "50000note"
     ]
+    command.extend(tx_config)
     if validator:
         command.append(validator)
     return run_symphonyd_command(command)

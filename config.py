@@ -6,7 +6,7 @@ import logging
 from prometheus_client import Summary, Counter, Gauge, Histogram
 from dotenv import load_dotenv
 
-# User setup
+
 """
 Create a .env with the environment variables below if required, otherwise set them in os environment or use the defaults. 
 """
@@ -21,14 +21,55 @@ else:
 slackurl = os.getenv("SLACK_URL", "")
 telegram_token = os.getenv("TELEGRAM_TOKEN", "")
 telegram_chat_id = os.getenv("TELEGRAM_CHAT_ID", "")
+
+
+"""
+Price Feeder API Configuration
+"""
 # https://www.alphavantage.co/
 alphavantage_key = os.getenv("ALPHAVANTAGE_KEY", "")
-# https://python-binance.readthedocs.io/
-binance_key = os.getenv("BINANCE_KEY","")
-binance_secret = os.getenv("BINANCE_SECRET","")
 # API option with Alphavantage removed - for testnet only
 fx_api_option = os.getenv("FX_API_OPTION", "band")
 ##with alphavantage fx_api_option = os.getenv("FX_API_OPTION", "alphavantage,band")
+
+"""
+Validator Configuration
+"""
+# oracle feeder address - only if using - this is a symphony1... format address
+#needs to be set first if using via delegate_feeder
+feeder = os.getenv("FEEDER_ADDRESS", "")
+# validator address - symphonyvaloper1... format
+validator = os.getenv("VALIDATOR_ADDRESS", "")
+#validator_account_address this is the validators symphony1... format address
+validator_account= os.getenv("VALIDATOR_ACC_ADDRESS")
+#if using OS Backend this is the password for the key
+key_password = os.getenv("KEY_PASSWORD", "")
+fee_denom = os.getenv("FEE_DENOM", "note")
+fee_gas = os.getenv("FEE_GAS", "250000")
+fee_amount = os.getenv("FEE_AMOUNT", "500000")
+keyring_back_end = os.getenv("KEY_BACKEND","os")
+
+"""
+Blockchain Config 
+"""
+# lcd to receive swap price information
+lcd_address = os.getenv("SYMPHONY_LCD", "https://symphony-api.kleomedes.network")
+# symphony chain ID
+chain_id = os.getenv("CHAIN_ID", "symphony-testnet-3")
+# voting period
+round_block_num = 7.0
+# set last update time
+last_height = 0
+# in tx_config - include all the flags that you need, don't include "from" as this is set in script
+tx_config = [
+    "--chain-id",chain_id,
+    "--gas-prices","0.00025note",
+    "--gas-adjustment", "1.5",
+    "--gas", "auto",
+    "--keyring-backend", keyring_back_end,
+]
+
+
 
 # stop oracle when price change exceeds stop_oracle_trigger
 stop_oracle_trigger_recent_diverge = float(os.getenv("STOP_ORACLE_RECENT_DIVERGENCE", "999999999999"))
@@ -36,23 +77,9 @@ stop_oracle_trigger_recent_diverge = float(os.getenv("STOP_ORACLE_RECENT_DIVERGE
 stop_oracle_trigger_exchange_diverge = float(os.getenv("STOP_ORACLE_EXCHANGE_DIVERGENCE", "0.1"))
 # vote negative price when bid-ask price is wider than bid_ask_spread_max
 bid_ask_spread_max = float(os.getenv("BID_ASK_SPREAD_MAX", "0.05"))
-# oracle feeder address
-feeder = os.getenv("FEEDER_ADDRESS", "")
-# validator address - symphonyvaloper
-validator = os.getenv("VALIDATOR_ADDRESS", "")
-#validator_account_address
-validator_account= os.getenv("VALIDATOR_ACC_ADDRESS")
-key_name = os.getenv("KEY_NAME", "")
-key_password = os.getenv("KEY_PASSWORD", "")
-fee_denom = os.getenv("FEE_DENOM", "note")
-fee_gas = os.getenv("FEE_GAS", "250000")
-fee_amount = os.getenv("FEE_AMOUNT", "500000")
 
-# node to broadcast the txs
-node = os.getenv("NODE_RPC", "tcp://127.0.0.1:26657")
 
-# lcd to receive swap price information
-lcd_address = os.getenv("SYMPHONY_LCD", "https://symphony-api.kleomedes.network")
+
 
 #osmosis config
 #Osmosis LCD URL
@@ -96,7 +123,7 @@ METRIC_OUTBOUND_ERROR = Counter("terra_oracle_request_errors", "Outbound HTTP re
 METRIC_OUTBOUND_LATENCY = Histogram("terra_oracle_request_latency", "Outbound HTTP request latency", ["remote"])
 
 
-#fx-symbol list to query fx rates for
+#fx-symbol list to query fx rates for - USD not required
 #TODO- configure with Symphony actual symbol list
 fx_symbol_list= ["HKD","INR"]
 
@@ -122,6 +149,7 @@ hardfix_active_set = [
 ]
 
 # denoms for abstain votes. it will vote abstain for all denoms in this list.
+# this is deprecatd for now
 abstain_set = [
     #"uusd",
     #"ukrw",
@@ -129,11 +157,7 @@ abstain_set = [
     #"umnt"
 ]
 
-chain_id = os.getenv("CHAIN_ID", "symphony-testnet-3")
-round_block_num = 7.0
 
-# set last update time
-last_height = 0
 
 logging.basicConfig(level=logging.DEBUG if debug else logging.INFO)
 logger = logging.root
