@@ -63,7 +63,7 @@ last_height = 0
 # in tx_config - include all the flags that you need, don't include "from" as this is set in script
 tx_config = [
     "--chain-id",chain_id,
-    "--gas-prices","0.00025note",
+    "--gas-prices","0.25note",
     "--gas-adjustment", "1.5",
     "--gas", "auto",
     "--keyring-backend", keyring_back_end,
