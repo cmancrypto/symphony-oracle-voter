@@ -7,7 +7,7 @@ from prometheus_client import start_http_server
 from config import *
 from price_feeder import get_prices, format_prices
 from vote_handler import process_votes
-from blockchain import get_latest_block, get_current_misses
+from blockchain import get_latest_block, get_current_misses, get_oracle_params
 from alerts import telegram, slack
 
 logging.basicConfig(level=logging.DEBUG if debug else logging.INFO)
@@ -23,7 +23,18 @@ def main():
     last_salt = {}
     last_hash = []
     last_active = []
-    misses = int(os.getenv("MISSES", "0"))
+
+    #get the oracle parameters from the chain
+    oracle_params , oracle_params_err_flag = get_oracle_params()
+    try:
+        if oracle_params_err_flag:
+            raise Exception("Error occured in getting Oracle Parameters")
+
+        round_block_num = oracle_params["vote_period"]
+        slash_window=oracle_params["slash_window"]
+    except Exception as e:
+        logger.exception(f"error getting oracle_params from REST API: {e}")
+        raise
 
     while True:
         latest_block_err_flag, height, latest_block_time = get_latest_block()

@@ -7,8 +7,20 @@ from config import *
 from alerts import time_request
 
 logger = logging.getLogger(__name__)
+@time_request('lcd')
+def get_oracle_params():
+    err_flag=False
+    try:
+        result = requests.get(f"{lcd_address}/{module_name}/oracle/params", timeout=http_timeout).json()
+        params = result["params"]
+        return params, err_flag
+    except:
+        METRIC_OUTBOUND_ERROR.labels('lcd').inc()
+        logger.exception("Error in get_oracle_params")
+        err_flag = True
+        return {}, err_flag
 
-##TODO - test out actual CLI side
+
 @time_request('lcd')
 def get_latest_block():
     err_flag = False
@@ -26,22 +38,21 @@ def get_latest_block():
 
     return err_flag, latest_block_height, latest_block_time
 
-
+@time_request('lcd')
 def get_current_misses():
     try:
-        result = requests.get(f"{lcd_address}/osmosis/oracle/v1beta1/validators/{validator}/miss", timeout=http_timeout).json()
+        result = requests.get(f"{lcd_address}/{module_name}/oracle/v1beta1/validators/{validator}/miss", timeout=http_timeout).json()
         misses = int(result["miss_counter"])
         #TODO - fix the height
         #height = int(result["height"]) - this doesn't appear supported anymore
         return misses #, height
     except:
         logger.exception("Error in get_current_misses")
-        return 0, 0
-
+        return 0
+@time_request('lcd')
 def get_my_current_prevote_hash():
-    ##TODO - this needs to be tested significantly, schema might have changed
     try:
-        result = requests.get(f"{lcd_address}/osmosis/oracle/v1beta1/validators/{validator}/aggregate_prevote", timeout=http_timeout).json()
+        result = requests.get(f"{lcd_address}/{module_name}/oracle/v1beta1/validators/{validator}/aggregate_prevote", timeout=http_timeout).json()
         return result["aggregate_prevote"]["hash"]
     except Exception as e:
         logger.info(f"No prevotes found")

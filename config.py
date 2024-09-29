@@ -52,15 +52,16 @@ keyring_back_end = os.getenv("KEY_BACKEND","os")
 """
 Blockchain Config 
 """
-# lcd to receive swap price information
+# REST API TO USE
 lcd_address = os.getenv("SYMPHONY_LCD", "https://symphony-api.kleomedes.network")
+#symphony custom module name for endpoint
+module_name = "osmosis"
 # symphony chain ID
 chain_id = os.getenv("CHAIN_ID", "symphony-testnet-3")
-# voting period
-round_block_num = 7.0
 # set last update time
 last_height = 0
 # in tx_config - include all the flags that you need, don't include "from" as this is set in script
+#doesn't support --home flags, leads to keyring issues
 tx_config = [
     "--chain-id",chain_id,
     "--gas-prices","0.25note",
@@ -101,10 +102,15 @@ gopax_share_default = float(os.getenv("GOPAX_SHARE_DEFAULT", "0"))
 gdac_share_default = float(os.getenv("GDAC_SHARE_DEFAULT", "0"))
 price_divergence_alert = os.getenv("PRICE_ALERTS", "false") == "true"
 vwma_period = int(os.getenv("VWMA_PERIOD", str(3 * 600)))  # in seconds
+
+
 misses = int(os.getenv("MISSES", "0"))
 alertmisses = os.getenv("MISS_ALERTS", "true") == "true"
 debug = os.getenv("DEBUG", "false") == "true"
 metrics_port = os.getenv("METRICS_PORT", "19000")
+
+
+
 band_endpoint = os.getenv("BAND_ENDPOINT", "https://laozi1.bandchain.org")
 band_luna_price_params = os.getenv("BAND_LUNA_PRICE_PARAMS", "13,1_000_000_000,10,16")
 
