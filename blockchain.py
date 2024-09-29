@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 def get_oracle_params():
     err_flag=False
     try:
-        result = requests.get(f"{lcd_address}/{module_name}/oracle/params", timeout=http_timeout).json()
+        result = requests.get(f"{lcd_address}/{module_name}/oracle/v1beta1/params", timeout=http_timeout).json()
         params = result["params"]
         return params, err_flag
     except:

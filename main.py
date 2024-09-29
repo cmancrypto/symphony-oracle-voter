@@ -30,8 +30,8 @@ def main():
         if oracle_params_err_flag:
             raise Exception("Error occured in getting Oracle Parameters")
 
-        round_block_num = oracle_params["vote_period"]
-        slash_window=oracle_params["slash_window"]
+        round_block_num = int(oracle_params["vote_period"])
+        slash_window=int(oracle_params["slash_window"])
     except Exception as e:
         logger.exception(f"error getting oracle_params from REST API: {e}")
         raise
@@ -84,5 +84,8 @@ if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
-        print("Keyboard Interrupted")
+        logger.exception("Keyboard Interrupted")
+        raise
+    except Exception as e:
+        logger.exception(f"Error occurred with running main.py: {e}")
         raise

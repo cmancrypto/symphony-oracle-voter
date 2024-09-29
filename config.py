@@ -53,7 +53,7 @@ keyring_back_end = os.getenv("KEY_BACKEND","os")
 Blockchain Config 
 """
 # REST API TO USE
-lcd_address = os.getenv("SYMPHONY_LCD", "https://symphony-api.kleomedes.network")
+lcd_address = os.getenv("SYMPHONY_LCD", "http://localhost:1317")
 #symphony custom module name for endpoint
 module_name = "osmosis"
 # symphony chain ID
