@@ -48,6 +48,7 @@ fee_denom = os.getenv("FEE_DENOM", "note")
 fee_gas = os.getenv("FEE_GAS", "250000")
 fee_amount = os.getenv("FEE_AMOUNT", "500000")
 keyring_back_end = os.getenv("KEY_BACKEND","os")
+symphonyd_path = os.getenv('SYMPHONYD_PATH', 'symphonyd')
 
 """
 Blockchain Config 

@@ -4,11 +4,15 @@ After=network.target
 
 [Service]
 Type=simple
-User=tr-service
-WorkingDirectory=/home/symphony-oracle-voter
-ExecStart=/home/symphony-oracle-voter/venv/bin/python3 -u /home/symphony-oracle-voter/main.py
+User=%u
+WorkingDirectory=%h/symphony-oracle-voter
+ExecStart=%h/symphony-oracle-voter/venv/bin/python3 -u %h/symphony-oracle-voter/main.py
 Restart=always
 RestartSec=3
+StandardOutput=journal
+StandardError=journal
+
+Environment="SYMPHONYD_PATH=%h/symphony/build"
 
 # Required configuration values
 

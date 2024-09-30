@@ -90,7 +90,7 @@ def run_symphonyd_command(command: List[str]) -> dict:
 
 def aggregate_exchange_rate_prevote(salt: str, exchange_rates: str, from_address: str, validator: Optional[str] = None) -> dict:
     command = [
-        "symphonyd", "tx", "oracle", "aggregate-prevote", salt, exchange_rates,
+        symphonyd_path, "tx", "oracle", "aggregate-prevote", salt, exchange_rates,
         "--from", from_address,
         "--output", "json",
         "-y", #skip confirmation
@@ -101,7 +101,7 @@ def aggregate_exchange_rate_prevote(salt: str, exchange_rates: str, from_address
     return run_symphonyd_command(command)
 def aggregate_exchange_rate_vote(salt: str, exchange_rates: str, from_address: str, validator: Optional[str] = None) -> dict:
     command = [
-        "symphonyd", "tx", "oracle", "aggregate-vote", salt, exchange_rates,
+        symphonyd_path, "tx", "oracle", "aggregate-vote", salt, exchange_rates,
         "--from", from_address,
         "--output", "json",
         "-y", #skip confirmation
