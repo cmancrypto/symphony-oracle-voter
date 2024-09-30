@@ -20,7 +20,7 @@ else:
 # Slack webhook
 slackurl = os.getenv("SLACK_URL", "")
 telegram_token = os.getenv("TELEGRAM_TOKEN", "")
-telegram_chat_id = os.getenv("TELEGRAM_CHAT_ID", "")
+telegram_chat_id = os.getenv("TELEGRAM_CHAT_ID", "") #can use telegram_tools to get chat-id
 
 
 """
