@@ -150,13 +150,23 @@ hardfix_active_set = [
     "uvnd",
 ]
 
+##custom config for testing chain - to be removed for mainnet.
+if chain_id == "testing":
+    fx_map = {
+        "usdr": "HKD",
+    }
+    active_candidate = [
+        "usdr",
+    ]
+
+    # hardfix the active set. does not care about stop_oracle_trigger_recent_diverge
+
+    hardfix_active_set = [
+        "usdr",
+    ]
 # denoms for abstain votes. it will vote abstain for all denoms in this list.
 # this is deprecated for now
 abstain_set = [
-    #"uusd",
-    #"ukrw",
-    #"usdr",
-    #"umnt"
 ]
 
 
