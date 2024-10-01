@@ -85,7 +85,7 @@ def get_band_standard_dataset(symbols : list):
     ##TODO- do not use this on mainnet, it can serve very stale prices
     try:
         base_url = "https://laozi1.bandchain.org/api/oracle/v1"
-        oracle_script_id, multiplier, min_count, ask_count = map(int, band_luna_price_params.split(","))
+        oracle_script_id, multiplier, min_count, ask_count = map(int, band_standard_price_params.split(","))
         params= {
             "ask_count": ask_count,
             "min_count": min_count,

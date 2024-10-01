@@ -98,6 +98,8 @@ osmosis_quote_asset=os.getenv("OSMOSIS_QUOTE_ASSET", "uosmo")
 
 #band config
 band_endpoint = os.getenv("BAND_ENDPOINT", "https://laozi1.bandchain.org")
+band_standard_price_params = os.getenv("BAND_PRICE_PARAMS", "13,1_000_000_000,10,16")
+
 
 misses = int(os.getenv("MISSES", "0"))
 alertmisses = os.getenv("MISS_ALERTS", "true") == "true"
