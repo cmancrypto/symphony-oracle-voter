@@ -23,9 +23,6 @@ def get_prices():
 
     osmosis_err_flag, osmosis_symphony_price = res_osmosis.result()
 
-    #left as example
-    #coinone_err_flag, coinone_luna_price, coinone_luna_base, coinone_luna_midprice_krw = res_coinone.result()
-    #binance_backup, coinone_backup, bithumb_backup, gdac_backup, gopax_backup = res_band.result()
     all_err_flag = fx_err_flag or osmosis_err_flag or swap_price_err_flag
     if not all_err_flag:
         ##can use weighted price calculations here, but only one price currently

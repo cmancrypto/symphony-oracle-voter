@@ -42,10 +42,13 @@ feeder = os.getenv("FEEDER_ADDRESS", "")
 validator = os.getenv("VALIDATOR_ADDRESS", "")
 #validator_account_address this is the validators symphony1... format address
 validator_account= os.getenv("VALIDATOR_ACC_ADDRESS")
-#if using OS Backend this is the password for the key
-key_password = os.getenv("KEY_PASSWORD", "")
+key_password = os.getenv("KEY_PASSWORD", "") #if using OS Backend this is the password for the key
+"""
+TX configuration
+"""
 fee_denom = os.getenv("FEE_DENOM", "note")
-fee_gas = os.getenv("FEE_GAS", "250000")
+fee_gas = os.getenv("FEE_GAS", "0.25note")
+gas_adjustment = os.getenv("GAS_ADJUSTMENT","1.5")
 fee_amount = os.getenv("FEE_AMOUNT", "500000")
 keyring_back_end = os.getenv("KEY_BACKEND","os")
 symphonyd_path = os.getenv('SYMPHONYD_PATH', 'symphonyd')
@@ -65,8 +68,8 @@ last_height = 0
 #doesn't support --home flags, leads to keyring issues
 tx_config = [
     "--chain-id",chain_id,
-    "--gas-prices","0.25note",
-    "--gas-adjustment", "1.5",
+    "--gas-prices",fee_gas,
+    "--gas-adjustment", gas_adjustment,
     "--gas", "auto",
     "--keyring-backend", keyring_back_end,
 ]
@@ -93,17 +96,8 @@ osmosis_base_asset=os.getenv("OSMOSIS_BASE_ASSET", "ibc/B8435C53F8B5CC87703531FF
 #Osmosis quote asset (uosmo)
 osmosis_quote_asset=os.getenv("OSMOSIS_QUOTE_ASSET", "uosmo")
 
-# default coinone weight
-coinone_share_default = float(os.getenv("COINONE_SHARE_DEFAULT", "1.0"))
-# default bithumb weight
-bithumb_share_default = float(os.getenv("BITHUMB_SHARE_DEFAULT", "0"))
-# default gopax weight
-gopax_share_default = float(os.getenv("GOPAX_SHARE_DEFAULT", "0"))
-# default gdac weight
-gdac_share_default = float(os.getenv("GDAC_SHARE_DEFAULT", "0"))
-price_divergence_alert = os.getenv("PRICE_ALERTS", "false") == "true"
-vwma_period = int(os.getenv("VWMA_PERIOD", str(3 * 600)))  # in seconds
-
+#band config
+band_endpoint = os.getenv("BAND_ENDPOINT", "https://laozi1.bandchain.org")
 
 misses = int(os.getenv("MISSES", "0"))
 alertmisses = os.getenv("MISS_ALERTS", "true") == "true"
@@ -112,8 +106,7 @@ metrics_port = os.getenv("METRICS_PORT", "19000")
 
 
 
-band_endpoint = os.getenv("BAND_ENDPOINT", "https://laozi1.bandchain.org")
-band_luna_price_params = os.getenv("BAND_LUNA_PRICE_PARAMS", "13,1_000_000_000,10,16")
+
 
 METRIC_MISSES = Gauge("terra_oracle_misses_total", "Total number of oracle misses")
 METRIC_HEIGHT = Gauge("terra_oracle_height", "Block height of the LCD node")
@@ -156,7 +149,7 @@ hardfix_active_set = [
 ]
 
 # denoms for abstain votes. it will vote abstain for all denoms in this list.
-# this is deprecatd for now
+# this is deprecated for now
 abstain_set = [
     #"uusd",
     #"ukrw",
