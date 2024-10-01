@@ -55,8 +55,8 @@ Blockchain Config
 """
 # REST API TO USE
 lcd_address = os.getenv("SYMPHONY_LCD", "http://localhost:1317")
-#symphony custom module name for endpoint
-module_name = "osmosis"
+#symphony custom module name for endpoints i.e module_name/oracle/
+module_name = os.getenv("MODULE_NAME", "osmosis")
 # symphony chain ID
 chain_id = os.getenv("CHAIN_ID", "symphony-testnet-3")
 # set last update time
