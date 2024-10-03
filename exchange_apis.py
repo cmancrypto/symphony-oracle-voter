@@ -4,7 +4,6 @@ import aiohttp
 from config import *
 from urllib.parse import urlencode
 
-# TODO - remove Terra assets/endpoints, update to Symphony assets
 
 logger = logging.getLogger(__name__)
 
@@ -12,7 +11,7 @@ logger = logging.getLogger(__name__)
 def get_swap_price():
     err_flag=False
     try:
-        result = requests.get(f"{lcd_address}/osmosis/oracle/v1beta1/denoms/exchange_rates", timeout=http_timeout).json()
+        result = requests.get(f"{lcd_address}/{module_name}/oracle/v1beta1/denoms/exchange_rates", timeout=http_timeout).json()
     except:
         logger.exception("Error in get_swap_price")
         result = {"result": []}
@@ -51,10 +50,13 @@ def get_alphavantage_fx_rate():
         for symbol, result in zip(fx_symbol_list, api_result):
             if symbol == "XDR":
                 symbol = "SDR"
-            result_real_fx[f"{symbol}"] = float(result["Realtime Currency Exchange Rate"]["5. Exchange Rate"])
-            logger.info(result_real_fx)
+            try:
+                result_real_fx[f"{symbol}"] = float(result["Realtime Currency Exchange Rate"]["5. Exchange Rate"])
+            except Exception as e:
+                logger.exception(f"Error with {symbol} from alphavantage: {e} ")
+                result_real_fx[f"{symbol}"] = float(0)
     except Exception as e:
-        logger.error(f"Error with alphavantage exchange rate key {e}")
+        logger.error(f"Error with alphavantage exchange rate {e}")
         err_flag=True
         result_real_fx=None
     return err_flag, result_real_fx
@@ -69,7 +71,7 @@ def get_fx_rate_free():
 
 ## this is updated, but there's no VND supported
 def get_fx_rate_from_band():
-
+#TODO update so that error flag is for EACH asset rather than all assets - handle voting abstain on assets that don't work
     error_flag, result = get_band_standard_dataset(fx_symbol_list)
     if error_flag:
         logger.error(f"error with Band fx data")
@@ -181,7 +183,7 @@ def get_osmosis_symphony_price():
         data = response.json()
         quote_asset_per = data["spot_price"] #this is a price in uOsmo or quote asset - i.e x uOsmo/note or Osmo/MLD
 
-        symbol="OSMO" #todo - make this in config (cant use the uOsmo)
+        symbol=osmosis_quote_asset_ticker
 
         error_flag, result = get_band_standard_dataset([symbol])
 

@@ -29,7 +29,7 @@ def get_prices():
         prices = {}
         for denom in active_candidate:
             ##TODO - need to check if these are correct prices or if these are 1/price
-            if denom == "uusd":
+            if denom == default_base_fx:
                 market_price = float(osmosis_symphony_price)
             else:
                 market_price = float(osmosis_symphony_price) * real_fx[fx_map[denom]]

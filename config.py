@@ -95,6 +95,9 @@ osmosis_pool_id= os.getenv("OSMOSIS_POOL_ID", "588")
 osmosis_base_asset=os.getenv("OSMOSIS_BASE_ASSET", "ibc/B8435C53F8B5CC87703531FF736508875DF473D0C231E93A3EF5C2C934E562A4")
 #Osmosis quote asset (uosmo)
 osmosis_quote_asset=os.getenv("OSMOSIS_QUOTE_ASSET", "uosmo")
+osmosis_quote_asset_ticker="OSMO"
+
+
 
 #band config
 band_endpoint = os.getenv("BAND_ENDPOINT", "https://laozi1.bandchain.org")
@@ -129,6 +132,7 @@ METRIC_OUTBOUND_LATENCY = Histogram("terra_oracle_request_latency", "Outbound HT
 #TODO- configure with Symphony actual symbol list
 fx_symbol_list= ["HKD","INR"]
 
+default_base_fx = "uusd"
 
 # parameters
 fx_map = {
