@@ -72,6 +72,7 @@ tx_config = [
     "--gas-adjustment", gas_adjustment,
     "--gas", "auto",
     "--keyring-backend", keyring_back_end,
+    "--broadcast-mode", "async"
 ]
 
 

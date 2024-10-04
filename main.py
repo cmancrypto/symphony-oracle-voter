@@ -58,7 +58,8 @@ def main():
                     last_prevoted_round = next_height_round
 
                 currentmisses = get_current_misses()
-                #METRIC_HEIGHT.set(currentheight)
+                currentheight = height % slash_window #TODO - confirm this is correct - i.e all time slashing or just current
+                METRIC_HEIGHT.set(currentheight)
                 METRIC_MISSES.set(currentmisses)
                 # turned off the misses height and misses alerting until can work out if the height is current height or something from the old miss API
                 #if its nothing special, can use current block height?
