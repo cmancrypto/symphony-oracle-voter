@@ -36,11 +36,9 @@ def process_votes(prices, active, last_price, last_salt, last_hash, last_active,
         logger.info("Broadcast votes/prevotes at the same time...")
         if feeder:
             aggregate_exchange_rate_vote(last_salt, last_price, from_account, validator)
-            time.sleep(5)  # this is so that we can make sure they have different account sequences, it doesn't like 2tx in same block
             aggregate_exchange_rate_prevote(this_salt, this_price, from_account, validator)
         else:
             aggregate_exchange_rate_vote(last_salt, last_price, from_account)
-            time.sleep(5)  # this is so that we can make sure they have different account sequences, it doesn't like 2tx in same block
             aggregate_exchange_rate_prevote(this_salt, this_price, from_account)
 
 
