@@ -69,8 +69,10 @@ def check_vote_tx(vote):
             try:
                 tx_height = tx_data["tx_response"]["height"]
                 tx_code = tx_data["tx_response"]["code"]
+                break #getting tx data succeeded, break the loop
             except:
                 logger.info(f"Error getting tx_response from endpoint, retrying {retry+1} of 3")
+                retry += 1 #increment
         if tx_code != 0:
             logger.error("error in submitting vote, code returned non zero")
             return True, "Vote error"
