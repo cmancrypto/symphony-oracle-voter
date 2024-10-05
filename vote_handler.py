@@ -60,11 +60,17 @@ def process_votes(prices, active, last_price, last_salt, last_hash, last_active,
 
 def check_vote_tx(vote):
     #return is error_flag, error_message
+    retry = 0
     try:
-        vote_hash = vote["txhash"]
-        tx_data = get_tx_data(vote_hash)
-        tx_height = tx_data["tx_response"]["height"]
-        tx_code = tx_data["tx_response"]["code"]
+        while retry < 3 :
+            time.sleep(1) #give tx some time to confirm and commit
+            vote_hash = vote["txhash"]
+            tx_data = get_tx_data(vote_hash)
+            try:
+                tx_height = tx_data["tx_response"]["height"]
+                tx_code = tx_data["tx_response"]["code"]
+            except:
+                logger.info(f"Error getting tx_response from endpoint, retrying {retry+1} of 3")
         if tx_code != 0:
             logger.error("error in submitting vote, code returned non zero")
             return True, "Vote error"
