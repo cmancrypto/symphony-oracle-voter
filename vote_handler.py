@@ -37,6 +37,7 @@ def process_votes(prices, active, last_price, last_salt, last_hash, last_active,
         if feeder:
             vote=aggregate_exchange_rate_vote(last_salt, last_price, from_account, validator)
             vote_check_error_flag, vote_check_error_msg = check_vote_tx(vote)
+            #TODO - change this so that there's a different blockheight checker - this one is bad
             if vote_check_error_flag:
                 logger.error(f"tx failed or failed to return data : {vote_check_error_msg}")
             aggregate_exchange_rate_prevote(this_salt, this_price, from_account, validator)
