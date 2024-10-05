@@ -3,7 +3,7 @@ import time
 import hashlib
 from hash_handler import get_aggregate_vote_hash
 from config import *
-from blockchain import get_my_current_prevote_hash, aggregate_exchange_rate_prevote, aggregate_exchange_rate_vote
+from blockchain import get_my_current_prevote_hash, aggregate_exchange_rate_prevote, aggregate_exchange_rate_vote, get_tx_data, get_latest_block
 
 logger = logging.getLogger(__name__)
 
@@ -35,12 +35,17 @@ def process_votes(prices, active, last_price, last_salt, last_hash, last_active,
     if hash_match_flag:
         logger.info("Broadcast votes/prevotes at the same time...")
         if feeder:
-            aggregate_exchange_rate_vote(last_salt, last_price, from_account, validator)
+            vote=aggregate_exchange_rate_vote(last_salt, last_price, from_account, validator)
+            vote_check_error_flag, vote_check_error_msg = check_vote_tx(vote)
+            if vote_check_error_flag:
+                logger.error(f"tx failed or failed to return data : {vote_check_error_msg}")
             aggregate_exchange_rate_prevote(this_salt, this_price, from_account, validator)
         else:
-            aggregate_exchange_rate_vote(last_salt, last_price, from_account)
+            vote=aggregate_exchange_rate_vote(last_salt, last_price, from_account)
+            vote_check_error_flag, vote_check_error_msg = check_vote_tx(vote)
+            if vote_check_error_flag:
+                logger.error(f"tx failed or failed to return data : {vote_check_error_msg}")
             aggregate_exchange_rate_prevote(this_salt, this_price, from_account)
-
 
         METRIC_VOTES.inc()
     else:
@@ -53,6 +58,29 @@ def process_votes(prices, active, last_price, last_salt, last_hash, last_active,
 
     return this_price, this_salt, this_hash, active
 
+def check_vote_tx(vote):
+    #return is error_flag, error_message
+    try:
+        vote_hash = vote["txhash"]
+        tx_data = get_tx_data(vote_hash)
+        tx_height = tx_data["tx_response"]["height"]
+        tx_code = tx_data["tx_response"]["code"]
+        if tx_code != 0:
+            logger.error("error in submitting vote, code returned non zero")
+            return True, "Vote error"
+        while True:
+            latest_block_err_flag, height, latest_block_time = get_latest_block()
+            if latest_block_err_flag:
+                logger.error("Error getting latest block")
+                return True, "Error getting latest block"
+
+            if height > tx_height:
+                logger.info(f"Vote tx for {tx_height} confirmed success at {height}")
+                return False, None
+            time.sleep(1)
+    except Exception as e:
+        logger.error(f"Error while checking vote tx tx_hash for vote: {e}")
+        return True, f" Exception:{e}"
 
 def check_hash_match(last_hash, my_current_prevotes):
     if not last_hash:

@@ -39,6 +39,13 @@ def get_latest_block():
     return err_flag, latest_block_height, latest_block_time
 
 @time_request('lcd')
+def get_tx_data(tx_hash):
+    result = requests.get(f"{lcd_address}/cosmos/tx/v1beta1/txs/{tx_hash}", timeout=http_timeout).json()
+    return result
+
+
+
+@time_request('lcd')
 def get_current_misses():
     try:
         result = requests.get(f"{lcd_address}/{module_name}/oracle/v1beta1/validators/{validator}/miss", timeout=http_timeout).json()
