@@ -41,6 +41,7 @@ def get_latest_block():
 @time_request('lcd')
 def get_tx_data(tx_hash):
     result = requests.get(f"{lcd_address}/cosmos/tx/v1beta1/txs/{tx_hash}", timeout=http_timeout).json()
+    logger.info(result)
     return result
 
 
