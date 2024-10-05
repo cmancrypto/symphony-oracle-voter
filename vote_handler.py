@@ -67,8 +67,8 @@ def check_vote_tx(vote):
             vote_hash = vote["txhash"]
             tx_data = get_tx_data(vote_hash)
             try:
-                tx_height = tx_data["tx_response"]["height"]
-                tx_code = tx_data["tx_response"]["code"]
+                tx_height = int(tx_data["tx_response"]["height"])
+                tx_code = int(tx_data["tx_response"]["code"])
                 break #getting tx data succeeded, break the loop
             except:
                 logger.info(f"Error getting tx_response from endpoint, retrying {retry+1} of 3")
