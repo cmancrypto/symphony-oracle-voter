@@ -52,8 +52,8 @@ def wait_for_block():
         time.sleep(max_wait_time)
         return
     try:
-        while counter < max_wait_time:
-            time.sleep(1)
+        while counter < max_wait_time*2:
+            time.sleep(0.5)
             [err_flag,current_height,current_time]=get_latest_block()
             if current_height > last_height:
                 return
