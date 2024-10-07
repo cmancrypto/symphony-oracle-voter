@@ -43,6 +43,25 @@ def get_tx_data(tx_hash):
     result = requests.get(f"{lcd_address}/cosmos/tx/v1beta1/txs/{tx_hash}", timeout=http_timeout).json()
     return result
 
+def wait_for_block():
+    [err_flag,last_height,last_time]=get_latest_block()
+    max_wait_time=float(max_block_confirm_wait_time)
+    counter=0
+    if err_flag:
+        logger.error(f"get_block_height error: waiting for {max_wait_time} seconds")
+        time.sleep(max_wait_time)
+        return
+    try:
+        while counter < max_wait_time:
+            time.sleep(1)
+            [err_flag,current_height,current_time]=get_latest_block()
+            if current_height > last_height:
+                return
+            counter = counter + 1
+    except Exception as e:
+        logger.error(f"Error in waiting for next block: {e}, waiting for {max_wait_time}")
+        time.sleep(max_wait_time)
+
 
 
 @time_request('lcd')

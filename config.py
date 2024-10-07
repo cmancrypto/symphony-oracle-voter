@@ -74,7 +74,7 @@ tx_config = [
     "--keyring-backend", keyring_back_end,
     "--broadcast-mode", "async"
 ]
-
+max_block_confirm_wait_time= os.getenv("BLOCK_WAIT_TIME", "7") #define how long is the maximum we should wait for next block
 
 
 # stop oracle when price change exceeds stop_oracle_trigger
@@ -114,16 +114,12 @@ metrics_port = os.getenv("METRICS_PORT", "19000")
 
 
 
-METRIC_MISSES = Gauge("terra_oracle_misses_total", "Total number of oracle misses")
-METRIC_HEIGHT = Gauge("terra_oracle_height", "Block height of the LCD node")
-METRIC_VOTES = Counter("terra_oracle_votes", "Counter of oracle votes")
+METRIC_MISSES = Gauge("symphony_oracle_misses_total", "Total number of oracle misses")
+METRIC_HEIGHT = Gauge("symphony_oracle_height", "Block height of the LCD node")
+METRIC_VOTES = Counter("symphony_oracle_votes", "Counter of oracle votes")
 
-METRIC_MARKET_PRICE = Gauge("terra_oracle_market_price", "Last market price", ['denom'])
-METRIC_SWAP_PRICE = Gauge("terra_oracle_swap_price", "Last swap price", ['denom'])
-
-METRIC_EXCHANGE_ASK_PRICE = Gauge("terra_oracle_exchange_ask_price", "Exchange ask price", ['exchange', 'denom'])
-METRIC_EXCHANGE_MID_PRICE = Gauge("terra_oracle_exchange_mid_price", "Exchange mid price", ['exchange', 'denom'])
-METRIC_EXCHANGE_BID_PRICE = Gauge("terra_oracle_exchange_bid_price", "Exchange bid price", ['exchange', 'denom'])
+METRIC_MARKET_PRICE = Gauge("symphony_oracle_market_price", "Last market price", ['denom'])
+#METRIC_SWAP_PRICE = Gauge("terra_oracle_swap_price", "Last swap price", ['denom'])
 
 METRIC_OUTBOUND_ERROR = Counter("terra_oracle_request_errors", "Outbound HTTP request error count", ["remote"])
 METRIC_OUTBOUND_LATENCY = Histogram("terra_oracle_request_latency", "Outbound HTTP request latency", ["remote"])

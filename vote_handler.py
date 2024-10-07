@@ -3,7 +3,7 @@ import time
 import hashlib
 from hash_handler import get_aggregate_vote_hash
 from config import *
-from blockchain import get_my_current_prevote_hash, aggregate_exchange_rate_prevote, aggregate_exchange_rate_vote, get_tx_data, get_latest_block
+from blockchain import get_my_current_prevote_hash, aggregate_exchange_rate_prevote, aggregate_exchange_rate_vote, get_tx_data, get_latest_block, wait_for_block
 
 logger = logging.getLogger(__name__)
 
@@ -36,13 +36,14 @@ def process_votes(prices, active, last_price, last_salt, last_hash, last_active,
         logger.info("Broadcast votes/prevotes at the same time...")
         if feeder:
             vote=aggregate_exchange_rate_vote(last_salt, last_price, from_account, validator)
+            wait_for_block()
             vote_check_error_flag, vote_check_error_msg = check_vote_tx(vote)
-            #TODO - change this so that there's a different blockheight checker - this one is bad
             if vote_check_error_flag:
                 logger.error(f"tx failed or failed to return data : {vote_check_error_msg}")
             aggregate_exchange_rate_prevote(this_salt, this_price, from_account, validator)
         else:
             vote=aggregate_exchange_rate_vote(last_salt, last_price, from_account)
+            wait_for_block()
             vote_check_error_flag, vote_check_error_msg = check_vote_tx(vote)
             if vote_check_error_flag:
                 logger.error(f"tx failed or failed to return data : {vote_check_error_msg}")
@@ -50,43 +51,30 @@ def process_votes(prices, active, last_price, last_salt, last_hash, last_active,
 
         METRIC_VOTES.inc()
     else:
+        logger.info("Broadcast prevotes only...")
         if feeder:
             aggregate_exchange_rate_prevote(this_salt,this_price,from_account,validator)
         else:
             aggregate_exchange_rate_prevote(this_salt,this_price,from_account)
-        logger.info("Broadcast prevotes only...")
+
 
 
     return this_price, this_salt, this_hash, active
 
 def check_vote_tx(vote):
-    #return is error_flag, error_message
-    retry = 0
     try:
-        while retry < 3 :
-            time.sleep(1) #give tx some time to confirm and commit
-            vote_hash = vote["txhash"]
-            tx_data = get_tx_data(vote_hash)
-            try:
-                tx_height = int(tx_data["tx_response"]["height"])
-                tx_code = int(tx_data["tx_response"]["code"])
-                break #getting tx data succeeded, break the loop
-            except:
-                logger.info(f"Error getting tx_response from endpoint, retrying {retry+1} of 3")
-                retry += 1 #increment
-        if tx_code != 0:
+        vote_hash = vote["txhash"]
+        tx_data = get_tx_data(vote_hash)
+        try:
+            tx_height = int(tx_data["tx_response"]["height"])
+            tx_code = int(tx_data["tx_response"]["code"])
+        except:
+            logger.info(f"Error getting tx_response from endpoint")
+        if tx_code != 0 or tx_code is None:
             logger.error("error in submitting vote, code returned non zero")
             return True, "Vote error"
-        while True:
-            latest_block_err_flag, height, latest_block_time = get_latest_block()
-            if latest_block_err_flag:
-                logger.error("Error getting latest block")
-                return True, "Error getting latest block"
-
-            if height > tx_height:
-                logger.info(f"Vote tx for {tx_height} confirmed success at {height}")
-                return False, None
-            time.sleep(1)
+        logger.info(f"Vote tx for {tx_height} confirmed success")
+        return False, None
     except Exception as e:
         logger.error(f"Error while checking vote tx tx_hash for vote: {e}")
         return True, f" Exception:{e}"
