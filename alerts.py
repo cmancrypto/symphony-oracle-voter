@@ -8,6 +8,7 @@ def time_request(remote):
     """Returns a decorator that measures execution time."""
     return METRIC_OUTBOUND_LATENCY.labels(remote).time()
 
+@time_request("telegram")
 def telegram(message):
     if not telegram_token:
         return
@@ -20,7 +21,8 @@ def telegram(message):
         )
     except:
         logger.exception("Error while sending telegram alert")
-
+        METRIC_OUTBOUND_ERROR.labels('telegram').inc()
+@time_request("slack")
 def slack(message):
     if not slackurl:
         return

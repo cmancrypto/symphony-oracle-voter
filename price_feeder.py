@@ -33,6 +33,7 @@ def get_prices():
                 market_price = float(osmosis_symphony_price)
             else:
                 market_price = float(osmosis_symphony_price) * real_fx[fx_map[denom]]
+            METRIC_MARKET_PRICE.labels(denom).set(market_price)
             prices[denom] = market_price
 
         if len(hardfix_active_set) == 0:

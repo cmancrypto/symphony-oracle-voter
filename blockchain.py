@@ -38,11 +38,11 @@ def get_latest_block():
 
     return err_flag, latest_block_height, latest_block_time
 
-@time_request('lcd')
+
 def get_tx_data(tx_hash):
     result = requests.get(f"{lcd_address}/cosmos/tx/v1beta1/txs/{tx_hash}", timeout=http_timeout).json()
     return result
-
+@time_request('lcd')
 def wait_for_block():
     [err_flag,last_height,last_time]=get_latest_block()
     max_wait_time=float(max_block_confirm_wait_time)
@@ -50,6 +50,7 @@ def wait_for_block():
     if err_flag:
         logger.error(f"get_block_height error: waiting for {max_wait_time} seconds")
         time.sleep(max_wait_time)
+        METRIC_OUTBOUND_ERROR.labels('lcd').inc()
         return
     try:
         while counter < max_wait_time*2:
@@ -61,6 +62,7 @@ def wait_for_block():
     except Exception as e:
         logger.error(f"Error in waiting for next block: {e}, waiting for {max_wait_time}")
         time.sleep(max_wait_time)
+        METRIC_OUTBOUND_ERROR.labels('lcd').inc()
 
 
 
@@ -69,11 +71,10 @@ def get_current_misses():
     try:
         result = requests.get(f"{lcd_address}/{module_name}/oracle/v1beta1/validators/{validator}/miss", timeout=http_timeout).json()
         misses = int(result["miss_counter"])
-        #TODO - fix the height
-        #height = int(result["height"]) - this doesn't appear supported anymore
-        return misses #, height
+        return misses
     except:
         logger.exception("Error in get_current_misses")
+        METRIC_OUTBOUND_ERROR.labels('lcd').inc()
         return 0
 @time_request('lcd')
 def get_my_current_prevote_hash():
@@ -82,6 +83,7 @@ def get_my_current_prevote_hash():
         return result["aggregate_prevote"]["hash"]
     except Exception as e:
         logger.info(f"No prevotes found")
+        METRIC_OUTBOUND_ERROR.labels('lcd').inc()
         return []
 
 def run_symphonyd_command(command: List[str]) -> dict:

@@ -77,6 +77,11 @@ tx_config = [
 max_block_confirm_wait_time= os.getenv("BLOCK_WAIT_TIME", "7") #define how long is the maximum we should wait for next block
 
 
+"""
+Oracle Divergence - 
+None of the Oracle divergences are implemented
+"""
+
 # stop oracle when price change exceeds stop_oracle_trigger
 stop_oracle_trigger_recent_diverge = float(os.getenv("STOP_ORACLE_RECENT_DIVERGENCE", "999999999999"))
 # stop oracle when price change exceeds stop_oracle_trigger
@@ -112,7 +117,9 @@ metrics_port = os.getenv("METRICS_PORT", "19000")
 
 
 
-
+"""
+Prometheus Metrics 
+"""
 
 METRIC_MISSES = Gauge("symphony_oracle_misses_total", "Total number of oracle misses")
 METRIC_HEIGHT = Gauge("symphony_oracle_height", "Block height of the LCD node")

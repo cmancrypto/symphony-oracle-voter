@@ -3,11 +3,11 @@ import asyncio
 import aiohttp
 from config import *
 from urllib.parse import urlencode
-
+from alerts import time_request
 
 logger = logging.getLogger(__name__)
 
-
+@time_request('lcd')
 def get_swap_price():
     err_flag=False
     try:
@@ -16,10 +16,10 @@ def get_swap_price():
         logger.exception("Error in get_swap_price")
         result = {"result": []}
         err_flag=True
-
+        METRIC_OUTBOUND_ERROR.labels('lcd').inc()
     return err_flag,result
 
-
+@time_request('alphavantage')
 async def get_alphavantage_fx_for(symbol_to):
     try:
         async with aiohttp.ClientSession() as async_session:
@@ -36,10 +36,12 @@ async def get_alphavantage_fx_for(symbol_to):
                 return await response.json(content_type=None)
     except Exception as e:
         logger.exception(f"Error in fx_for {e}")
+        METRIC_OUTBOUND_ERROR.labels('alphavantage').inc()
 
 
 def get_alphavantage_fx_rate():
     err_flag = False
+    result_real_fx={}
     try:
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
@@ -70,19 +72,23 @@ def get_fx_rate_free():
 
 
 ## this is updated, but there's no VND supported
+
 def get_fx_rate_from_band():
-#TODO update so that error flag is for EACH asset rather than all assets - handle voting abstain on assets that don't work
-    error_flag, result = get_band_standard_dataset(fx_symbol_list)
-    if error_flag:
-        logger.error(f"error with Band fx data")
+    try:
+    #TODO update so that error flag is for EACH asset rather than all assets - handle voting abstain on assets that don't work
+        error_flag, result = get_band_standard_dataset(fx_symbol_list)
+        if error_flag:
+            logger.error(f"error with Band fx data")
+            return True, []
+
+        result_real_fx = {"USD": 1.0}
+        for symbol in fx_symbol_list:
+            result_real_fx[f"{symbol}"] = 1/float(result[symbol]["price"])
+        return False, result_real_fx
+    except Exception as e:
+        logger.error(f"error with Band fx data: {e}")
         return True, []
-
-    result_real_fx = {"USD": 1.0}
-    for symbol in fx_symbol_list:
-        result_real_fx[f"{symbol}"] = 1/float(result[symbol]["price"])
-
-    return False, result_real_fx
-
+@time_request('band')
 def get_band_standard_dataset(symbols : list):
     ##TODO- do not use this on mainnet, it can serve very stale prices
     try:
@@ -118,9 +124,11 @@ def get_band_standard_dataset(symbols : list):
         return False, result
     except requests.RequestException as e:
         logger.error(f"Error fetching data from API: {str(e)}")
+        METRIC_OUTBOUND_ERROR.labels('band').inc()
         return True, []
     except Exception as e:
         logger.error(f"Unexpected error: {str(e)}")
+        METRIC_OUTBOUND_ERROR.labels('band').inc()
         return True, []
 
 
@@ -172,6 +180,7 @@ def get_binance_luna_price():
     """
 # Add any other exchange API functions as needed
 
+@time_request('osmolcd')
 def get_osmosis_symphony_price():
 
     ##TODO- do not use this on mainnet, it can serve very stale prices because of band
@@ -197,9 +206,13 @@ def get_osmosis_symphony_price():
 
     except requests.RequestException as e:
         logger.error(f"Error fetching Osmosis Symphony Price: {str(e)}")
+        METRIC_OUTBOUND_ERROR.labels('osmolcd').inc()
         return True, []
+
 
     except Exception as e:
         logger.error(f"Unexpected error with Osmosis Symphony Price: {str(e)}")
+        METRIC_OUTBOUND_ERROR.labels('osmolcd').inc()
         return True, []
+
 
