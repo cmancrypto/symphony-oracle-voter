@@ -20,6 +20,7 @@ def main():
     last_height = 0
     last_prevoted_round = 0
     last_epoch = 0
+    last_prevoted_epoch=0
     last_price = {}
     last_salt = {}
     last_hash = []
@@ -41,29 +42,27 @@ def main():
         latest_block_err_flag, height, latest_block_time = get_latest_block()
         current_epoch_err_flag, current_epoch = get_current_epoch("minute")
 
-        if not current_epoch_err_flag and current_epoch > last_epoch:
+        if (not current_epoch_err_flag
+                and not latest_block_err_flag
+                and current_epoch > last_epoch):
+
             last_height = height
             last_epoch = current_epoch
-            #TODO - update from here with epoch base
-            current_round = int(float(height - 1) / round_block_num)
-            next_height_round = int(float(height) / round_block_num)
-            num_blocks_till_next_round = (current_round + 1) * round_block_num - height
 
-            if next_height_round > last_prevoted_round and (
-                    num_blocks_till_next_round == 0 or num_blocks_till_next_round > 3):
+            if current_epoch > last_prevoted_epoch:
                 prices, active = get_prices()
-
                 prices = format_prices(prices)
 
                 if prices:
                     last_price, last_salt, last_hash, last_active = process_votes(prices, active, last_price, last_salt,
-                                                                                  last_hash, last_active, height)
-                    last_prevoted_round = next_height_round
+                                                                                  last_hash, last_active, current_epoch)
+                    last_prevoted_epoch = current_epoch
 
                 currentmisses = get_current_misses()
-                currentheight = height % slash_window #TODO - confirm this is correct - i.e all time slashing or just current
+                currentheight = height % slash_window #TODO - update to Epochs
                 METRIC_HEIGHT.set(currentheight)
                 METRIC_MISSES.set(currentmisses)
+                METRIC_EPOCHS.set(current_epoch)
                 # turned off the misses height and misses alerting until can work out if the height is current height or something from the old miss API
                 #if its nothing special, can use current block height?
                 """if currentheight > 0:
@@ -79,7 +78,7 @@ def main():
                     misses = currentmisses
                     """
             else:
-                logger.info(f"{height}: wait {num_blocks_till_next_round} blocks until this round ends...")
+                logger.info(f"current epoch: {current_epoch} last prevote : {last_prevoted_round} waiting for next epoch")
 
         time.sleep(1)
 
