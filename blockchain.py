@@ -45,7 +45,7 @@ def get_current_epoch(epoch_identifier : str):
         result= requests.get(f"{lcd_address}/{module_name}/epochs/v1beta1/epochs", timeout=http_timeout).json()
         for epoch in result.get("epochs",[]):
             if epoch.get("identifier") == epoch_identifier:
-                return err_flag, epoch.get("current_epoch", [])
+                return err_flag, int(epoch.get("current_epoch", []))
         #didn't find any epochs that match the identifier
         err_flag = True
         return err_flag, None
