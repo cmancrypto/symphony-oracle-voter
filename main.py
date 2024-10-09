@@ -7,7 +7,7 @@ from prometheus_client import start_http_server
 from config import *
 from price_feeder import get_prices, format_prices
 from vote_handler import process_votes
-from blockchain import get_latest_block, get_current_misses, get_oracle_params
+from blockchain import get_latest_block, get_current_misses, get_oracle_params, get_current_epoch
 from alerts import telegram, slack
 
 logging.basicConfig(level=logging.DEBUG if debug else logging.INFO)
@@ -19,6 +19,7 @@ def main():
 
     last_height = 0
     last_prevoted_round = 0
+    last_epoch = 0
     last_price = {}
     last_salt = {}
     last_hash = []
@@ -38,10 +39,12 @@ def main():
 
     while True:
         latest_block_err_flag, height, latest_block_time = get_latest_block()
+        current_epoch_err_flag, current_epoch = get_current_epoch("minute")
 
-        if not latest_block_err_flag and height > last_height:
+        if not current_epoch_err_flag and current_epoch > last_epoch:
             last_height = height
-
+            last_epoch = current_epoch
+            #TODO - update from here with epoch base
             current_round = int(float(height - 1) / round_block_num)
             next_height_round = int(float(height) / round_block_num)
             num_blocks_till_next_round = (current_round + 1) * round_block_num - height
