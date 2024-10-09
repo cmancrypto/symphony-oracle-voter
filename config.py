@@ -124,6 +124,8 @@ Prometheus Metrics
 METRIC_MISSES = Gauge("symphony_oracle_misses_total", "Total number of oracle misses")
 METRIC_HEIGHT = Gauge("symphony_oracle_height", "Block height of the LCD node")
 METRIC_VOTES = Counter("symphony_oracle_votes", "Counter of oracle votes")
+METRIC_EPOCHS = Gauge("symphony_oracle_epoch", "EPOCH reported by the LCD node")
+
 
 METRIC_MARKET_PRICE = Gauge("symphony_oracle_market_price", "Last market price", ['denom'])
 #METRIC_SWAP_PRICE = Gauge("terra_oracle_swap_price", "Last swap price", ['denom'])
