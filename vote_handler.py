@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 #TODO - refactor after testing blockchain functions to determine what it looks like on chain - i.e do we need to compare hashes.
 
-def process_votes(prices, active, last_price, last_salt, last_hash, last_active, height):
+def process_votes(prices, active, last_price, last_salt, last_hash, last_active, epoch):
     this_price = {}
     this_hash = {}
     this_salt = {}
@@ -18,7 +18,7 @@ def process_votes(prices, active, last_price, last_salt, last_hash, last_active,
     this_salt = get_salt(str(time.time()))
     this_hash = get_aggregate_vote_hash(this_salt,this_price,validator)
 
-    logger.info(f"Start voting on height {height + 1}")
+    logger.info(f"Start voting on epoch {epoch + 1}")
 
     my_current_prevotes = get_my_current_prevote_hash()
     hash_match_flag = check_hash_match(last_hash, my_current_prevotes)
