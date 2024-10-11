@@ -31,8 +31,6 @@ def main():
     try:
         if oracle_params_err_flag:
             raise Exception("Error occured in getting Oracle Parameters")
-
-        round_block_num = int(oracle_params["vote_period"]) #TODO - deprecate?
         slash_window=int(oracle_params["slash_window"]) #TODO - handle
     except Exception as e:
         logger.exception(f"error getting oracle_params from REST API: {e}")
