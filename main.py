@@ -26,15 +26,6 @@ def main():
     last_hash = []
     last_active = []
 
-    #get the oracle parameters from the chain
-    oracle_params , oracle_params_err_flag = get_oracle_params()
-    try:
-        if oracle_params_err_flag:
-            raise Exception("Error occured in getting Oracle Parameters")
-        slash_window=int(oracle_params["slash_window"]) #TODO - handle
-    except Exception as e:
-        logger.exception(f"error getting oracle_params from REST API: {e}")
-        raise
 
     while True:
         latest_block_err_flag, height, latest_block_time = get_latest_block()
@@ -57,7 +48,7 @@ def main():
                     last_prevoted_epoch = current_epoch
 
                 currentmisses = get_current_misses()
-                currentheight = height % slash_window #TODO - update to Epochs
+                currentheight = height
                 METRIC_HEIGHT.set(currentheight)
                 METRIC_MISSES.set(currentmisses)
                 METRIC_EPOCHS.set(current_epoch)
