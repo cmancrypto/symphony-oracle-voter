@@ -36,7 +36,7 @@ fx_api_option = os.getenv("FX_API_OPTION", "band")
 Validator Configuration
 """
 # oracle feeder address - only if using - this is a symphony1... format address
-#needs to be set first if using via delegate_feeder
+#needs to be set first if using via delegate_feeder, do not set if not using
 feeder = os.getenv("FEEDER_ADDRESS", "")
 # validator address - symphonyvaloper1... format
 validator = os.getenv("VALIDATOR_ADDRESS", "")
@@ -74,7 +74,7 @@ tx_config = [
     "--keyring-backend", keyring_back_end,
     "--broadcast-mode", "async"
 ]
-max_block_confirm_wait_time= os.getenv("BLOCK_WAIT_TIME", "7") #define how long is the maximum we should wait for next block
+max_block_confirm_wait_time= os.getenv("BLOCK_WAIT_TIME", "10") #define how long is the maximum we should wait for next block in seconds
 
 
 """
