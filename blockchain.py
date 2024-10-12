@@ -122,7 +122,7 @@ def run_symphonyd_command(command: List[str]) -> dict:
             logger.error(f"Error output: {stderr}")
             raise subprocess.CalledProcessError(process.returncode, command, stdout, stderr)
 
-        logger.info(stdout)
+        logger.debug(stdout)
             # Try to parse the output as JSON
         try:
             return json.loads(stdout)
