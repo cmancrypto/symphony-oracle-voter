@@ -13,6 +13,7 @@ def process_votes(prices, active, last_price, last_salt, last_hash, last_active,
     this_price = {}
     this_hash = {}
     this_salt = {}
+    pre_vote_err = True
 
     this_price = prices
     this_salt = get_salt(str(time.time()))
@@ -33,40 +34,112 @@ def process_votes(prices, active, last_price, last_salt, last_hash, last_active,
 
 
     if hash_match_flag:
-        logger.info("Broadcast votes/prevotes at the same time...")
+        logger.info("Broadcast votes/prevotes...")
         if feeder:
-            vote=aggregate_exchange_rate_vote(last_salt, last_price, from_account, validator)
-            vote_err=handle_tx_return(tx=vote, tx_type="vote")
-            pre_vote=aggregate_exchange_rate_prevote(this_salt, this_price, from_account, validator)
-            pre_vote_err=handle_tx_return(tx=pre_vote, tx_type= "prevote")
+            vote_args = (last_salt, last_price, from_account, validator)
+            prevote_args = (this_salt, this_price, from_account, validator)
         else:
-            vote=aggregate_exchange_rate_vote(last_salt, last_price, from_account)
-            vote_err = handle_tx_return(tx=vote, tx_type="vote")
-            pre_vote=aggregate_exchange_rate_prevote(this_salt, this_price, from_account)
-            pre_vote_err = handle_tx_return(tx=pre_vote, tx_type="prevote")
-
+            vote_args = (last_salt, last_price, from_account)
+            prevote_args = (this_salt, this_price, from_account)
+        vote_err, pre_vote_err = perform_vote_and_prevote(vote_args, prevote_args)
         METRIC_VOTES.inc()
     else:
         logger.info("Broadcast prevotes only...")
         if feeder:
-            aggregate_exchange_rate_prevote(this_salt,this_price,from_account,validator)
+            prevote_args = (this_salt, this_price, from_account, validator)
         else:
-            aggregate_exchange_rate_prevote(this_salt,this_price,from_account)
+            prevote_args = (this_salt, this_price, from_account)
+        pre_vote_err = perform_prevote_only(prevote_args)
 
+    return this_price, this_salt, this_hash, active, pre_vote_err
 
+def execute_transaction(func,tx_type, *args, ):
+    """Execute a transaction and handle errors.
 
-    return this_price, this_salt, this_hash, active
+        This function executes the given transaction function with the provided arguments and
+        handles the return, including waiting for tx confirmation.
+
+        Args:
+            func (callable): The transaction function to execute (vote or prevote).
+            tx_type (string): Name of type of tx (vote or prevote)
+            *args: Variable length argument list for the transaction function.
+
+        Returns:
+            Bool: The error_flag returned by handle_tx_return
+        """
+    tx = func(*args)
+    err = handle_tx_return(tx=tx, tx_type=tx_type)
+    return err
+
+def perform_vote_and_prevote(vote_args, prevote_args):
+    """Perform both a vote and a prevote transaction.
+
+        This function executes both a vote and a prevote transaction using the provided arguments.
+
+        Args:
+            vote_args (tuple): Arguments for the vote transaction.
+            prevote_args (tuple): Arguments for the prevote transaction.
+
+        Returns:
+            tuple: A tuple containing error flags from the vote and prevote transactions.
+        """
+    vote_err = execute_transaction(aggregate_exchange_rate_vote, "vote", *vote_args, )
+    pre_vote_err = execute_transaction(aggregate_exchange_rate_prevote, "pre_vote", *prevote_args)
+    return vote_err, pre_vote_err
+
+def perform_prevote_only(prevote_args):
+    """Perform only a prevote transaction.
+
+    This function executes a prevote transaction using the provided arguments.
+
+    Args:
+        prevote_args (tuple): Arguments for the prevote transaction.
+
+    Returns:
+        Bool: Error flag from pre_vote tx
+    """
+    return execute_transaction(aggregate_exchange_rate_prevote, *prevote_args)
 
 def handle_tx_return(tx, tx_type):
+    """Handle the return of a transaction and check its status.
+
+    This function waits for the block to confirm, then checks the transaction status.
+
+    Args:
+        tx (dict): The transaction object returned from the blockchain.
+        tx_type (str): The type of transaction (e.g., "vote", "prevote").
+
+    Returns:
+        bool: True if there was an error with the transaction, False otherwise.
+
+    """
     err_flag=False
-    wait_for_block() #handle waiting for the block to confirm
+    wait_for_block()  # handle waiting for the block to confirm
     vote_check_error_flag, vote_check_error_msg = check_tx(tx, tx_type)
     if vote_check_error_flag:
-        logger.error(f"tx failed or failed to return data : {vote_check_error_msg}")
+        logger.error(f"{tx_type} failed or failed to return data : {vote_check_error_msg}")
         err_flag = True
     return err_flag
 
+
 def check_tx(tx,tx_type = "tx"):
+    """Check the status of a transaction.
+
+    This function retrieves the transaction data and verifies its status.
+
+    Args:
+        tx (dict): The transaction object returned from the blockchain.
+        tx_type (str, optional): The type of transaction. Defaults to "tx".
+
+    Returns:
+        tuple: A tuple containing:
+            - bool: True if there was an error, False otherwise.
+            - str or None: Error message if there was an error, None otherwise.
+
+    Note:
+        This function catches all exceptions and returns them as part of the error tuple
+        rather than raising them.
+    """
     try:
         tx_hash = tx["txhash"]
         tx_data = get_tx_data(tx_hash)

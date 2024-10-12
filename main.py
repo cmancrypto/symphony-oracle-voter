@@ -43,7 +43,7 @@ def main():
                 prices = format_prices(prices)
 
                 if prices:
-                    last_price, last_salt, last_hash, last_active = process_votes(prices, active, last_price, last_salt,
+                    last_price, last_salt, last_hash, last_active, pre_vote_err_flag = process_votes(prices, active, last_price, last_salt,
                                                                                   last_hash, last_active, current_epoch)
                     last_prevoted_epoch = current_epoch
 
