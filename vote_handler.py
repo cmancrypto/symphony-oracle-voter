@@ -36,18 +36,14 @@ def process_votes(prices, active, last_price, last_salt, last_hash, last_active,
         logger.info("Broadcast votes/prevotes at the same time...")
         if feeder:
             vote=aggregate_exchange_rate_vote(last_salt, last_price, from_account, validator)
-            wait_for_block()
-            vote_check_error_flag, vote_check_error_msg = check_vote_tx(vote)
-            if vote_check_error_flag:
-                logger.error(f"tx failed or failed to return data : {vote_check_error_msg}")
-            aggregate_exchange_rate_prevote(this_salt, this_price, from_account, validator)
+            vote_err=handle_tx_return(tx=vote, tx_type="vote")
+            pre_vote=aggregate_exchange_rate_prevote(this_salt, this_price, from_account, validator)
+            pre_vote_err=handle_tx_return(tx=pre_vote, tx_type= "prevote")
         else:
             vote=aggregate_exchange_rate_vote(last_salt, last_price, from_account)
-            wait_for_block()
-            vote_check_error_flag, vote_check_error_msg = check_vote_tx(vote)
-            if vote_check_error_flag:
-                logger.error(f"tx failed or failed to return data : {vote_check_error_msg}")
-            aggregate_exchange_rate_prevote(this_salt, this_price, from_account)
+            vote_err = handle_tx_return(tx=vote, tx_type="vote")
+            pre_vote=aggregate_exchange_rate_prevote(this_salt, this_price, from_account)
+            pre_vote_err = handle_tx_return(tx=pre_vote, tx_type="prevote")
 
         METRIC_VOTES.inc()
     else:
@@ -61,22 +57,31 @@ def process_votes(prices, active, last_price, last_salt, last_hash, last_active,
 
     return this_price, this_salt, this_hash, active
 
-def check_vote_tx(vote):
+def handle_tx_return(tx, tx_type):
+    err_flag=False
+    wait_for_block() #handle waiting for the block to confirm
+    vote_check_error_flag, vote_check_error_msg = check_tx(tx, tx_type)
+    if vote_check_error_flag:
+        logger.error(f"tx failed or failed to return data : {vote_check_error_msg}")
+        err_flag = True
+    return err_flag
+
+def check_tx(tx,tx_type = "tx"):
     try:
-        vote_hash = vote["txhash"]
-        tx_data = get_tx_data(vote_hash)
+        tx_hash = tx["txhash"]
+        tx_data = get_tx_data(tx_hash)
         try:
             tx_height = int(tx_data["tx_response"]["height"])
             tx_code = int(tx_data["tx_response"]["code"])
         except:
-            logger.info(f"Error getting tx_response from endpoint")
+            logger.error(f"Error getting {tx_type} response from endpoint for {tx_hash}")
         if tx_code != 0 or tx_code is None:
-            logger.error("error in submitting vote, code returned non zero")
-            return True, "Vote error"
-        logger.info(f"Vote tx for {tx_height} confirmed success")
+            logger.error(f"error in submitting {tx_type}, code returned non zero")
+            return True, f"{tx_type} error"
+        logger.info(f"{tx_type} at {tx_height} confirmed success")
         return False, None
     except Exception as e:
-        logger.error(f"Error while checking vote tx tx_hash for vote: {e}")
+        logger.error(f"Error while checking tx_hash for {tx_type}: {e}")
         return True, f" Exception:{e}"
 
 def check_hash_match(last_hash, my_current_prevotes):
@@ -85,7 +90,7 @@ def check_hash_match(last_hash, my_current_prevotes):
         return False
 
     if last_hash == my_current_prevotes:
-        logger.info("Hash match")
+        logger.debug("Hash match")
         return True
 
     else:
@@ -103,4 +108,4 @@ def get_hash(salt, price, denom, validator):
     m.update("{}:{}:{}:{}".format(salt, price, denom, validator).encode('utf-8'))
     return m.hexdigest()[:40]
 
-# Add any other helper functions for vote handling
+# Add any other helper functions for tx handling
