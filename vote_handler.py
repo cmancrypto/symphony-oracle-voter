@@ -113,9 +113,6 @@ def perform_vote_and_prevote(vote_args, prevote_args):
             tuple: A tuple containing error flags from the vote and prevote transactions.
         """
     vote_err = execute_transaction(aggregate_exchange_rate_vote, "vote", *vote_args, )
-    if vote_err:
-        pre_vote_err = True # if the vote fails don't do the prevote and instead let the loop try again
-        return vote_err, pre_vote_err
     pre_vote_err = execute_transaction(aggregate_exchange_rate_prevote, "pre_vote", *prevote_args)
     return vote_err, pre_vote_err
 
