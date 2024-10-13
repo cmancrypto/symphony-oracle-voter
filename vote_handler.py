@@ -10,10 +10,31 @@ logger = logging.getLogger(__name__)
 #TODO - refactor after testing blockchain functions to determine what it looks like on chain - i.e do we need to compare hashes.
 
 def process_votes(prices, active, last_price, last_salt, last_hash, last_active, epoch):
+
+    """Process votes for a given epoch.
+
+        This function handles the voting process, including both votes and prevotes,
+        with retry logic for failed attempts.
+
+        Args:
+            prices (dict): Current prices to vote on.
+            active (??): Current active set to vote on.
+            last_price (dict): Prices from the last successful vote.
+            last_salt (str): Salt used in the last pre_vote
+            last_hash (str): Hash from the last pre_vote
+            last_active (??): Active status from the last pre_vote
+            epoch (int): Current epoch number.
+
+        Returns:
+            tuple: (this_price, this_salt, this_hash, active)
+        """
+
+    #todo - fix this documentation to have correct types
     this_price = {}
     this_hash = {}
     this_salt = {}
-    pre_vote_err = True
+    retry = 0
+    voted = False
 
     this_price = prices
     this_salt = get_salt(str(time.time()))
@@ -31,33 +52,40 @@ def process_votes(prices, active, last_price, last_salt, last_hash, last_active,
     else:
         logger.error("Configure feeder or validator_acc for submitting tx")
 
+    while retry < max_retry_per_epoch:
+        if hash_match_flag and not voted:
+            logger.info("Broadcast votes/prevotes...")
+            if feeder:
+                vote_args = (last_salt, last_price, from_account, validator)
+                prevote_args = (this_salt, this_price, from_account, validator)
+            else:
+                vote_args = (last_salt, last_price, from_account)
+                prevote_args = (this_salt, this_price, from_account)
+            vote_err, pre_vote_err = perform_vote_and_prevote(vote_args, prevote_args)
+            METRIC_VOTES.inc()
 
-
-    if hash_match_flag:
-        logger.info("Broadcast votes/prevotes...")
-        if feeder:
-            vote_args = (last_salt, last_price, from_account, validator)
-            prevote_args = (this_salt, this_price, from_account, validator)
+            if not vote_err and not pre_vote_err: #if both votes succeed, no need to continue in loop
+                return this_price, this_salt, this_hash, active
+            if not vote_err:
+                voted = True #this is so we don't revote if only the pre_vote fails
+                logger.error("Vote succeeded, but prevote failed")
         else:
-            vote_args = (last_salt, last_price, from_account)
-            prevote_args = (this_salt, this_price, from_account)
-        vote_err, pre_vote_err = perform_vote_and_prevote(vote_args, prevote_args)
-        METRIC_VOTES.inc()
-    else:
-        logger.info("Broadcast prevotes only...")
-        if feeder:
-            prevote_args = (this_salt, this_price, from_account, validator)
-        else:
-            prevote_args = (this_salt, this_price, from_account)
-        pre_vote_err = perform_prevote_only(prevote_args)
+            logger.info("Broadcast prevotes only...")
+            prevote_args = (this_salt, this_price, from_account, validator) if feeder else (this_salt, this_price, from_account)
+            pre_vote_err = perform_prevote_only(prevote_args)
+            if not pre_vote_err:
+                return this_price, this_salt, this_hash, active
 
-    return this_price, this_salt, this_hash, active, pre_vote_err
+        #this is only reachable if there have been errors in either vote or prevote
+        retry = retry + 1
+        logger.error(f"retrying vote/prevote {retry} of {max_retry_per_epoch} ")
+    return this_price, this_salt, this_hash, active
 
 def execute_transaction(func,tx_type, *args, ):
     """Execute a transaction and handle errors.
 
         This function executes the given transaction function with the provided arguments and
-        handles the return, including waiting for tx confirmation.
+        handles the error flag return, including waiting for tx confirmation.
 
         Args:
             func (callable): The transaction function to execute (vote or prevote).
@@ -67,14 +95,15 @@ def execute_transaction(func,tx_type, *args, ):
         Returns:
             Bool: The error_flag returned by handle_tx_return
         """
-    tx = func(*args)
-    err = handle_tx_return(tx=tx, tx_type=tx_type)
+    tx_return = func(*args)
+    err = handle_tx_return(tx=tx_return, tx_type=tx_type)
     return err
 
 def perform_vote_and_prevote(vote_args, prevote_args):
     """Perform both a vote and a prevote transaction.
 
-        This function executes both a vote and a prevote transaction using the provided arguments.
+        This function executes a vote transaction, and if it doesn't fail, executes a prevote transaction using the provided arguments.
+        Returns error flags for failure of either.
 
         Args:
             vote_args (tuple): Arguments for the vote transaction.
@@ -84,6 +113,9 @@ def perform_vote_and_prevote(vote_args, prevote_args):
             tuple: A tuple containing error flags from the vote and prevote transactions.
         """
     vote_err = execute_transaction(aggregate_exchange_rate_vote, "vote", *vote_args, )
+    if vote_err:
+        pre_vote_err = True # if the vote fails don't do the prevote and instead let the loop try again
+        return vote_err, pre_vote_err
     pre_vote_err = execute_transaction(aggregate_exchange_rate_prevote, "pre_vote", *prevote_args)
     return vote_err, pre_vote_err
 

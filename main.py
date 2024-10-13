@@ -17,9 +17,7 @@ logger = logging.getLogger(__name__)
 def main():
     start_http_server(int(metrics_port))
 
-    last_height = 0
     last_prevoted_round = 0
-    last_epoch = 0
     last_prevoted_epoch=0
     last_price = {}
     last_salt = {}
@@ -30,20 +28,15 @@ def main():
     while True:
         latest_block_err_flag, height, latest_block_time = get_latest_block()
         current_epoch_err_flag, current_epoch = get_current_epoch("minute")
-
         if (not current_epoch_err_flag
                 and not latest_block_err_flag
-                and current_epoch > last_epoch):
+                and current_epoch > last_prevoted_epoch):
 
-            last_height = height
-            last_epoch = current_epoch
-
-            if current_epoch > last_prevoted_epoch:
                 prices, active = get_prices()
                 prices = format_prices(prices)
 
                 if prices:
-                    last_price, last_salt, last_hash, last_active, pre_vote_err_flag = process_votes(prices, active, last_price, last_salt,
+                    last_price, last_salt, last_hash, last_active = process_votes(prices, active, last_price, last_salt,
                                                                                   last_hash, last_active, current_epoch)
                     last_prevoted_epoch = current_epoch
 
@@ -57,17 +50,17 @@ def main():
                 """if currentheight > 0:
                     misspercentage = round(float(currentmisses) / float(currentheight) * 100, 2)
                     logger.info(f"Current miss percentage: {misspercentage}%")
-
+                """
                 if currentmisses > misses:
-                    alarm_content = f"Terra Oracle misses went from {misses} to {currentmisses} ({misspercentage}%)"
+                    alarm_content = f"Terra Oracle misses went from {misses} to {currentmisses} )"
                     logger.error(alarm_content)
                     if alertmisses:
                         telegram(alarm_content)
                         slack(alarm_content)
                     misses = currentmisses
-                    """
-            else:
-                logger.info(f"current epoch: {current_epoch} last prevote : {last_prevoted_round} waiting for next epoch")
+
+        else:
+            logger.info(f"current epoch: {current_epoch} last prevote : {last_prevoted_round} waiting for next epoch")
 
         time.sleep(1)
 

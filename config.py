@@ -75,7 +75,7 @@ tx_config = [
     "--broadcast-mode", "async"
 ]
 max_block_confirm_wait_time= os.getenv("BLOCK_WAIT_TIME", "10") #define how long is the maximum we should wait for next block in seconds
-
+max_retry_per_epoch = int(os.getenv("MAX_RETRY_PER_EPOCH", "1"))
 
 """
 Oracle Divergence - 
