@@ -63,7 +63,7 @@ def process_votes(prices, active, last_price, last_salt, last_hash, last_active,
                 prevote_args = (this_salt, this_price, from_account)
             vote_err, pre_vote_err = perform_vote_and_prevote(vote_args, prevote_args)
             METRIC_VOTES.inc()
-
+            #TODO - handle where vote err, but not pre-vote err
             if not vote_err and not pre_vote_err: #if both votes succeed, no need to continue in loop
                 return this_price, this_salt, this_hash, active
             if not vote_err:
