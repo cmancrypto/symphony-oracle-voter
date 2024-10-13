@@ -27,6 +27,7 @@ def process_votes(prices, active, last_price, last_salt, last_hash, last_active,
             tuple: (this_price, this_salt, this_hash, active)
         """
 
+    # set initial states
     this_price = ""
     this_hash = ""
     this_salt = ""
@@ -34,8 +35,10 @@ def process_votes(prices, active, last_price, last_salt, last_hash, last_active,
     voted = False
     prevoted = False
 
+    # set parameters for voting
     this_price = prices
     this_salt = get_salt(str(time.time()))
+    # create hash to match what will be submitted in prevote
     this_hash = get_aggregate_vote_hash(this_salt, this_price, validator)
 
     logger.info(f"Start voting on epoch {epoch + 1}")
@@ -43,6 +46,7 @@ def process_votes(prices, active, last_price, last_salt, last_hash, last_active,
     my_current_prevotes = get_my_current_prevote_hash()
     hash_match_flag = check_hash_match(last_hash, my_current_prevotes)
 
+    # determine which args will be needed
     if feeder:
         from_account = feeder
     elif validator_account:
@@ -50,7 +54,7 @@ def process_votes(prices, active, last_price, last_salt, last_hash, last_active,
     else:
         logger.error("Configure feeder or validator_acc for submitting tx")
 
-    while retry <= max_retry_per_epoch:
+    while retry <= max_retry_per_epoch: #retry loop
         if hash_match_flag and not voted and not prevoted:  # hash matches and neither vote nor pre vote - perform both
             logger.info("Broadcast votes/prevotes...")
             # get together the vote arguments
