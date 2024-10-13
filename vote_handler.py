@@ -81,7 +81,7 @@ def process_votes(prices, active, last_price, last_salt, last_hash, last_active,
         logger.error(f"retrying vote/prevote {retry} of {max_retry_per_epoch} ")
     return this_price, this_salt, this_hash, active
 
-def execute_transaction(func,tx_type, *args, ):
+def execute_transaction(func,tx_type, *args):
     """Execute a transaction and handle errors.
 
         This function executes the given transaction function with the provided arguments and
