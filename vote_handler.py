@@ -3,42 +3,40 @@ import time
 import hashlib
 from hash_handler import get_aggregate_vote_hash
 from config import *
-from blockchain import get_my_current_prevote_hash, aggregate_exchange_rate_prevote, aggregate_exchange_rate_vote, get_tx_data, get_latest_block, wait_for_block
+from blockchain import get_my_current_prevote_hash, aggregate_exchange_rate_prevote, aggregate_exchange_rate_vote, \
+    get_tx_data, get_latest_block, wait_for_block
 
 logger = logging.getLogger(__name__)
 
-#TODO - refactor after testing blockchain functions to determine what it looks like on chain - i.e do we need to compare hashes.
-
 def process_votes(prices, active, last_price, last_salt, last_hash, last_active, epoch):
-
     """Process votes for a given epoch.
 
-        This function handles the voting process, including both votes and prevotes,
+        This function handles the voting process, including both votes and pre votes,
         with retry logic for failed attempts.
 
         Args:
-            prices (dict): Current prices to vote on.
-            active (??): Current active set to vote on.
+            prices (str): Current prices to vote on.
+            active (list): Current active set to vote on.
             last_price (dict): Prices from the last successful vote.
             last_salt (str): Salt used in the last pre_vote
             last_hash (str): Hash from the last pre_vote
-            last_active (??): Active status from the last pre_vote
+            last_active (list): Active status from the last pre_vote
             epoch (int): Current epoch number.
 
         Returns:
             tuple: (this_price, this_salt, this_hash, active)
         """
 
-    #todo - fix this documentation to have correct types
-    this_price = {}
-    this_hash = {}
-    this_salt = {}
+    this_price = ""
+    this_hash = ""
+    this_salt = ""
     retry = 0
     voted = False
+    prevoted = False
 
     this_price = prices
     this_salt = get_salt(str(time.time()))
-    this_hash = get_aggregate_vote_hash(this_salt,this_price,validator)
+    this_hash = get_aggregate_vote_hash(this_salt, this_price, validator)
 
     logger.info(f"Start voting on epoch {epoch + 1}")
 
@@ -53,35 +51,51 @@ def process_votes(prices, active, last_price, last_salt, last_hash, last_active,
         logger.error("Configure feeder or validator_acc for submitting tx")
 
     while retry <= max_retry_per_epoch:
-        if hash_match_flag and not voted:
+        if hash_match_flag and not voted and not prevoted:  # hash matches and neither vote nor pre vote - perform both
             logger.info("Broadcast votes/prevotes...")
-            if feeder:
-                vote_args = (last_salt, last_price, from_account, validator)
-                prevote_args = (this_salt, this_price, from_account, validator)
-            else:
-                vote_args = (last_salt, last_price, from_account)
-                prevote_args = (this_salt, this_price, from_account)
-            vote_err, pre_vote_err = perform_vote_and_prevote(vote_args, prevote_args)
-            METRIC_VOTES.inc()
-            #TODO - handle where vote err, but not pre-vote err
-            if not vote_err and not pre_vote_err: #if both votes succeed, no need to continue in loop
+            # get together the vote arguments
+            vote_args = (last_salt, last_price, from_account, validator) if feeder else (
+            last_salt, last_price, from_account)
+            prevote_args = (this_salt, this_price, from_account, validator) if feeder else (
+            this_salt, this_price, from_account)
+
+            vote_err, pre_vote_err = perform_vote_and_prevote(vote_args, prevote_args)  # perform the votes
+
+            METRIC_VOTES.inc()  # increment this regardless of vote outcome
+            if not vote_err and not pre_vote_err:  # if both votes succeed, no need to continue in loop
                 return this_price, this_salt, this_hash, active
+
             if not vote_err:
-                voted = True #this is so we don't revote if only the pre_vote fails
+                voted = True  # this is so we don't revote if only the pre_vote fails
                 logger.error("Vote succeeded, but prevote failed")
-        else:
+
+            if not pre_vote_err:
+                prevoted = True  # this is so we don't redo prevote if only the vote fails
+                logger.error("Prevote succeeded, but vote failed")
+
+        elif hash_match_flag and not voted: #if hash matches and not voted, vote
+            logger.info("Broadcast votes only...")
+            vote_args = (last_salt, last_price, from_account, validator) if feeder else (
+                last_salt, last_price, from_account)
+            vote_err = perform_vote_only(vote_args)
+            if not vote_err:
+                return this_price, this_salt, this_hash, active
+
+        else: #if either hash doesn't match last or not prevoted do prevotes only
             logger.info("Broadcast prevotes only...")
-            prevote_args = (this_salt, this_price, from_account, validator) if feeder else (this_salt, this_price, from_account)
+            prevote_args = (this_salt, this_price, from_account, validator) if feeder else (
+                this_salt,this_price, from_account)
             pre_vote_err = perform_prevote_only(prevote_args)
             if not pre_vote_err:
                 return this_price, this_salt, this_hash, active
 
-        #this is only reachable if there have been errors in either vote or prevote
+        # this is only reachable if there have been errors in either vote or prevote
         retry = retry + 1
         logger.error(f"retrying vote/prevote {retry} of {max_retry_per_epoch} ")
     return this_price, this_salt, this_hash, active
 
-def execute_transaction(func,tx_type, *args):
+
+def execute_transaction(func, tx_type, *args):
     """Execute a transaction and handle errors.
 
         This function executes the given transaction function with the provided arguments and
@@ -98,6 +112,7 @@ def execute_transaction(func,tx_type, *args):
     tx_return = func(*args)
     err = handle_tx_return(tx=tx_return, tx_type=tx_type)
     return err
+
 
 def perform_vote_and_prevote(vote_args, prevote_args):
     """Perform both a vote and a prevote transaction.
@@ -116,6 +131,7 @@ def perform_vote_and_prevote(vote_args, prevote_args):
     pre_vote_err = execute_transaction(aggregate_exchange_rate_prevote, "pre_vote", *prevote_args)
     return vote_err, pre_vote_err
 
+
 def perform_prevote_only(prevote_args):
     """Perform only a prevote transaction.
 
@@ -128,6 +144,21 @@ def perform_prevote_only(prevote_args):
         Bool: Error flag from pre_vote tx
     """
     return execute_transaction(aggregate_exchange_rate_prevote, "pre_vote", *prevote_args)
+
+
+def perform_vote_only(vote_args):
+    """Perform only a vote transaction.
+
+    This function executes a vote transaction using the provided arguments.
+
+    Args:
+        vote_args (tuple): Arguments for the prevote transaction.
+
+    Returns:
+        Bool: Error flag from vote tx
+    """
+    return execute_transaction(aggregate_exchange_rate_vote, "vote", *vote_args)
+
 
 def handle_tx_return(tx, tx_type):
     """Handle the return of a transaction and check its status.
@@ -142,8 +173,8 @@ def handle_tx_return(tx, tx_type):
         bool: True if there was an error with the transaction, False otherwise.
 
     """
-    err_flag=False
-    wait_for_block()  # handle waiting for the block to confirm
+    err_flag = False
+    wait_for_block()  # handle waiting for  the current block to confirm
     vote_check_error_flag, vote_check_error_msg = check_tx(tx, tx_type)
     if vote_check_error_flag:
         logger.error(f"{tx_type} failed or failed to return data : {vote_check_error_msg}")
@@ -151,7 +182,7 @@ def handle_tx_return(tx, tx_type):
     return err_flag
 
 
-def check_tx(tx,tx_type = "tx"):
+def check_tx(tx, tx_type="tx"):
     """Check the status of a transaction.
 
     This function retrieves the transaction data and verifies its status.
@@ -175,8 +206,8 @@ def check_tx(tx,tx_type = "tx"):
         try:
             tx_height = int(tx_data["tx_response"]["height"])
             tx_code = int(tx_data["tx_response"]["code"])
-        except:
-            logger.error(f"Error getting {tx_type} response from endpoint for {tx_hash}")
+        except Exception as e:
+            logger.error(f"Error getting {tx_type} response from endpoint for {tx_hash}: {e}")
         if tx_code != 0 or tx_code is None:
             logger.error(f"error in submitting {tx_type}, code returned non zero")
             return True, f"{tx_type} error"
@@ -185,6 +216,7 @@ def check_tx(tx,tx_type = "tx"):
     except Exception as e:
         logger.error(f"Error while checking tx_hash for {tx_type}: {e}")
         return True, f" Exception:{e}"
+
 
 def check_hash_match(last_hash, my_current_prevotes):
     if not last_hash:
@@ -198,7 +230,6 @@ def check_hash_match(last_hash, my_current_prevotes):
     else:
         logger.info(f"Hash failed to match {last_hash} vs {my_current_prevotes} ")
         return False
-
 
 
 def get_salt(string):
