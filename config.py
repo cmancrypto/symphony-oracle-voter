@@ -164,15 +164,18 @@ hardfix_active_set = [
 if chain_id == "testing":
     fx_map = {
         "usdr": "HKD",
+        "peppe":"INR",
     }
     active_candidate = [
         "usdr",
+        "peppe"
     ]
 
     # hardfix the active set. does not care about stop_oracle_trigger_recent_diverge
 
     hardfix_active_set = [
         "usdr",
+        "peppe"
     ]
 # denoms for abstain votes. it will vote abstain for all denoms in this list.
 # this is deprecated for now
