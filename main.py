@@ -53,7 +53,7 @@ def main():
                     logger.info(f"Current miss percentage: {misspercentage}%")
                 """
                 if currentmisses > misses:
-                    alarm_content = f"Terra Oracle misses went from {misses} to {currentmisses} )"
+                    alarm_content = f"Symphony Oracle misses went from {misses} to {currentmisses} )"
                     logger.error(alarm_content)
                     if alertmisses:
                         telegram(alarm_content)
