@@ -112,7 +112,7 @@ def perform_vote_and_prevote(vote_args, prevote_args):
         Returns:
             tuple: A tuple containing error flags from the vote and prevote transactions.
         """
-    vote_err = execute_transaction(aggregate_exchange_rate_vote, "vote", *vote_args, )
+    vote_err = execute_transaction(aggregate_exchange_rate_vote, "vote", *vote_args)
     pre_vote_err = execute_transaction(aggregate_exchange_rate_prevote, "pre_vote", *prevote_args)
     return vote_err, pre_vote_err
 
@@ -127,7 +127,7 @@ def perform_prevote_only(prevote_args):
     Returns:
         Bool: Error flag from pre_vote tx
     """
-    return execute_transaction(aggregate_exchange_rate_prevote, *prevote_args)
+    return execute_transaction(aggregate_exchange_rate_prevote, "pre_vote", *prevote_args)
 
 def handle_tx_return(tx, tx_type):
     """Handle the return of a transaction and check its status.
