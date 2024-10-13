@@ -23,6 +23,7 @@ def main():
     last_salt = {}
     last_hash = []
     last_active = []
+    misses = 0
 
 
     while True:
