@@ -52,7 +52,7 @@ def process_votes(prices, active, last_price, last_salt, last_hash, last_active,
     else:
         logger.error("Configure feeder or validator_acc for submitting tx")
 
-    while retry < max_retry_per_epoch:
+    while retry <= max_retry_per_epoch:
         if hash_match_flag and not voted:
             logger.info("Broadcast votes/prevotes...")
             if feeder:
