@@ -16,8 +16,9 @@ logger.info("logging test")
 
 
 def main():
+    logger.info("main")
     start_http_server(int(metrics_port))
-
+    logger.info("starting http server")
     last_prevoted_round = 0
     last_prevoted_epoch=0
     last_price = {}
