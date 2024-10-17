@@ -12,13 +12,13 @@ from alerts import telegram, slack
 
 logging.basicConfig(level=logging.DEBUG if debug else logging.INFO)
 logger = logging.getLogger(__name__)
-logger.info("logging test")
+logger.debug("logging test")
 
 
 def main():
-    logger.info("main")
+    logger.debug("main")
     start_http_server(int(metrics_port))
-    logger.info("starting http server")
+    logger.debug("starting http server")
     last_prevoted_round = 0
     last_prevoted_epoch=0
     last_price = {}
@@ -31,8 +31,8 @@ def main():
     while True:
         latest_block_err_flag, height, latest_block_time = get_latest_block()
         current_epoch_err_flag, current_epoch = get_current_epoch("minute")
-        logger.info(current_epoch)
-        logger.info(height)
+        logger.debug(current_epoch)
+        logger.debug(height)
         if (not current_epoch_err_flag
                 and not latest_block_err_flag
                 and current_epoch > last_prevoted_epoch):

@@ -43,9 +43,11 @@ def get_current_epoch(epoch_identifier: str):
     err_flag = False
     try:
         result = requests.get(f"{lcd_address}/{module_name}/epochs/v1beta1/epochs", timeout=http_timeout).json()
+        logger.debug(result)
         for epoch in result.get("epochs", []):
             if epoch.get("identifier") == epoch_identifier:
                 current_epoch = epoch.get("current_epoch")
+                logger.debug(current_epoch)
                 if current_epoch is not None:
                     return err_flag, int(current_epoch)
                 else:
