@@ -31,8 +31,6 @@ def main():
     while True:
         latest_block_err_flag, height, latest_block_time = get_latest_block()
         current_epoch_err_flag, current_epoch = get_current_epoch("minute")
-        logger.debug(current_epoch)
-        logger.debug(height)
         if (not current_epoch_err_flag
                 and not latest_block_err_flag
                 and current_epoch > last_prevoted_epoch):
@@ -65,7 +63,7 @@ def main():
                     misses = currentmisses
 
         else:
-            logger.debug(f"current epoch: {current_epoch} last prevote : {last_prevoted_round} waiting for next epoch")
+            logger.debug(f"current epoch: {current_epoch} last prevote : {last_prevoted_epoch} current height: {height} waiting for next epoch")
 
         time.sleep(1)
 
