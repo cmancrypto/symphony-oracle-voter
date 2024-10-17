@@ -53,7 +53,7 @@ def get_alphavantage_fx_rate():
             if symbol == "XDR":
                 symbol = "SDR"
             try:
-                result_real_fx[f"{symbol}"] = float(result["Realtime Currency Exchange Rate"]["5. Exchange Rate"])
+                result_real_fx[f"{symbol}"] = round(float(result["Realtime Currency Exchange Rate"]["5. Exchange Rate"]),6)
             except Exception as e:
                 logger.exception(f"Error with {symbol} from alphavantage: {e} ")
                 result_real_fx[f"{symbol}"] = float(0)
@@ -83,7 +83,7 @@ def get_fx_rate_from_band():
 
         result_real_fx = {"USD": 1.0}
         for symbol in fx_symbol_list:
-            result_real_fx[f"{symbol}"] = 1/float(result[symbol]["price"])
+            result_real_fx[f"{symbol}"] = round(1/float(result[symbol]["price"]),6)
         return False, result_real_fx
     except Exception as e:
         logger.error(f"error with Band fx data: {e}")

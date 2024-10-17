@@ -47,11 +47,11 @@ key_password = os.getenv("KEY_PASSWORD", "") #if using OS Backend this is the pa
 TX configuration
 """
 fee_denom = os.getenv("FEE_DENOM", "note")
-fee_gas = os.getenv("FEE_GAS", "0.025note")
+fee_gas = os.getenv("FEE_GAS", "0.0025note")
 gas_adjustment = os.getenv("GAS_ADJUSTMENT","1.1")
 fee_amount = os.getenv("FEE_AMOUNT", "500000")
 keyring_back_end = os.getenv("KEY_BACKEND","os")
-symphonyd_path = os.getenv('SYMPHONYD_PATH', 'symphonyd')
+symphonyd_path = os.getenv('SYMPHONYD_PATH', 'symphonyd') #ensure symphonyd properly on PATH
 
 """
 Blockchain Config 
