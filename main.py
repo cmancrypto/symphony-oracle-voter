@@ -12,6 +12,7 @@ from alerts import telegram, slack
 
 logging.basicConfig(level=logging.DEBUG if debug else logging.INFO)
 logger = logging.getLogger(__name__)
+logger.info("logging test")
 
 
 def main():
