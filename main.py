@@ -63,7 +63,7 @@ def main():
                     misses = currentmisses
 
         else:
-            logger.debug(f"current epoch: {current_epoch} last prevote : {last_prevoted_round} waiting for next epoch")
+            logger.info(f"current epoch: {current_epoch} last prevote : {last_prevoted_round} waiting for next epoch")
 
         time.sleep(1)
 
