@@ -36,7 +36,7 @@ fx_api_option = os.getenv("FX_API_OPTION", "band")
 Validator Configuration
 """
 # oracle feeder address - only if using - this is a symphony1... format address
-#needs to be set first if using via delegate_feeder
+#needs to be set first if using via delegate_feeder, do not set if not using
 feeder = os.getenv("FEEDER_ADDRESS", "")
 # validator address - symphonyvaloper1... format
 validator = os.getenv("VALIDATOR_ADDRESS", "")
@@ -47,11 +47,11 @@ key_password = os.getenv("KEY_PASSWORD", "") #if using OS Backend this is the pa
 TX configuration
 """
 fee_denom = os.getenv("FEE_DENOM", "note")
-fee_gas = os.getenv("FEE_GAS", "0.25note")
-gas_adjustment = os.getenv("GAS_ADJUSTMENT","1.5")
+fee_gas = os.getenv("FEE_GAS", "0.0025note")
+gas_adjustment = os.getenv("GAS_ADJUSTMENT","1.1")
 fee_amount = os.getenv("FEE_AMOUNT", "500000")
 keyring_back_end = os.getenv("KEY_BACKEND","os")
-symphonyd_path = os.getenv('SYMPHONYD_PATH', 'symphonyd')
+symphonyd_path = os.getenv('SYMPHONYD_PATH', 'symphonyd') #ensure symphonyd properly on PATH
 
 """
 Blockchain Config 
@@ -59,7 +59,7 @@ Blockchain Config
 # REST API TO USE
 lcd_address = os.getenv("SYMPHONY_LCD", "http://localhost:1317")
 #symphony custom module name for endpoints i.e module_name/oracle/
-module_name = os.getenv("MODULE_NAME", "osmosis")
+module_name = os.getenv("MODULE_NAME", "symphony")
 # symphony chain ID
 chain_id = os.getenv("CHAIN_ID", "symphony-testnet-3")
 # set last update time
@@ -74,8 +74,8 @@ tx_config = [
     "--keyring-backend", keyring_back_end,
     "--broadcast-mode", "async"
 ]
-max_block_confirm_wait_time= os.getenv("BLOCK_WAIT_TIME", "7") #define how long is the maximum we should wait for next block
-
+max_block_confirm_wait_time= os.getenv("BLOCK_WAIT_TIME", "10") #define how long is the maximum we should wait for next block in seconds
+max_retry_per_epoch = int(os.getenv("MAX_RETRY_PER_EPOCH", "1"))
 
 """
 Oracle Divergence - 
@@ -124,6 +124,8 @@ Prometheus Metrics
 METRIC_MISSES = Gauge("symphony_oracle_misses_total", "Total number of oracle misses")
 METRIC_HEIGHT = Gauge("symphony_oracle_height", "Block height of the LCD node")
 METRIC_VOTES = Counter("symphony_oracle_votes", "Counter of oracle votes")
+METRIC_EPOCHS = Gauge("symphony_oracle_epoch", "EPOCH reported by the LCD node")
+
 
 METRIC_MARKET_PRICE = Gauge("symphony_oracle_market_price", "Last market price", ['denom'])
 #METRIC_SWAP_PRICE = Gauge("terra_oracle_swap_price", "Last swap price", ['denom'])
@@ -162,15 +164,18 @@ hardfix_active_set = [
 if chain_id == "testing":
     fx_map = {
         "usdr": "HKD",
+        "peppe":"INR",
     }
     active_candidate = [
         "usdr",
+        "peppe"
     ]
 
     # hardfix the active set. does not care about stop_oracle_trigger_recent_diverge
 
     hardfix_active_set = [
         "usdr",
+        "peppe"
     ]
 # denoms for abstain votes. it will vote abstain for all denoms in this list.
 # this is deprecated for now

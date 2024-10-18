@@ -39,6 +39,29 @@ def get_latest_block():
     return err_flag, latest_block_height, latest_block_time
 
 
+@time_request('lcd')
+def get_current_epoch(epoch_identifier: str):
+    err_flag = False
+    try:
+        result = requests.get(f"{lcd_address}/{module_name}/epochs/v1beta1/epochs", timeout=http_timeout).json()
+        for epoch in result.get("epochs", []):
+            if epoch.get("identifier") == epoch_identifier:
+                current_epoch = epoch.get("current_epoch")
+                logger.debug(current_epoch)
+                if current_epoch is not None:
+                    return err_flag, int(current_epoch)
+                else:
+                    err_flag = True
+                    return err_flag, None
+        # didn't find any epochs that match the identifier
+        err_flag = True
+        return err_flag, None
+
+    except Exception as e:
+        logger.error(f"An error occurred fetching current epoch: {str(e)}")
+        err_flag = True
+        return err_flag, None
+
 def get_tx_data(tx_hash):
     result = requests.get(f"{lcd_address}/cosmos/tx/v1beta1/txs/{tx_hash}", timeout=http_timeout).json()
     return result
@@ -103,7 +126,7 @@ def run_symphonyd_command(command: List[str]) -> dict:
             logger.error(f"Error output: {stderr}")
             raise subprocess.CalledProcessError(process.returncode, command, stdout, stderr)
 
-        logger.info(stdout)
+        logger.debug(stdout)
             # Try to parse the output as JSON
         try:
             return json.loads(stdout)
