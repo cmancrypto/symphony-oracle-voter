@@ -38,6 +38,7 @@ def get_latest_block():
 
     return err_flag, latest_block_height, latest_block_time
 
+
 @time_request('lcd')
 def get_current_epoch(epoch_identifier: str):
     err_flag = False
@@ -61,9 +62,6 @@ def get_current_epoch(epoch_identifier: str):
         err_flag = True
         return err_flag, None
 
-
-
-
 def get_tx_data(tx_hash):
     result = requests.get(f"{lcd_address}/cosmos/tx/v1beta1/txs/{tx_hash}", timeout=http_timeout).json()
     return result
@@ -75,6 +73,7 @@ def wait_for_block():
     if err_flag:
         logger.error(f"get_block_height error: waiting for {max_wait_time} seconds")
         time.sleep(max_wait_time)
+        METRIC_OUTBOUND_ERROR.labels('lcd').inc()
         return
     try:
         while counter < max_wait_time*2:
@@ -86,7 +85,7 @@ def wait_for_block():
     except Exception as e:
         logger.error(f"Error in waiting for next block: {e}, waiting for {max_wait_time}")
         time.sleep(max_wait_time)
-
+        METRIC_OUTBOUND_ERROR.labels('lcd').inc()
 
 
 

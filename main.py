@@ -7,7 +7,7 @@ from prometheus_client import start_http_server
 from config import *
 from price_feeder import get_prices, format_prices
 from vote_handler import process_votes
-from blockchain import get_latest_block, get_current_misses, get_oracle_params, get_current_epoch
+from blockchain import get_latest_block, get_current_misses, get_oracle_params
 from alerts import telegram, slack
 
 logging.basicConfig(level=logging.DEBUG if debug else logging.INFO)
