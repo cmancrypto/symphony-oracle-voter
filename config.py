@@ -61,7 +61,7 @@ lcd_address = os.getenv("SYMPHONY_LCD", "http://localhost:1317")
 #symphony custom module name for endpoints i.e module_name/oracle/
 module_name = os.getenv("MODULE_NAME", "symphony")
 # symphony chain ID
-chain_id = os.getenv("CHAIN_ID", "symphony-testnet-3")
+chain_id = os.getenv("CHAIN_ID", "symphony-testnet-4")
 # set last update time
 last_height = 0
 # in tx_config - include all the flags that you need, don't include "from" as this is set in script
