@@ -79,7 +79,7 @@ def wait_for_block():
         while counter < max_wait_time*2:
             time.sleep(0.5)
             [err_flag,current_height,current_time]=get_latest_block()
-            if current_height > last_height:
+            if current_height > last_height + 1:
                 return
             counter = counter + 1
     except Exception as e:
