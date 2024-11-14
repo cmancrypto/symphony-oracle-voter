@@ -30,7 +30,8 @@ This guide will walk you through the process of setting up the Symphony Oracle V
    ```
    cd symphony-oracle-voter
    ```
-3. Check `config.py` for configuration - create a .env in to set necessesary variables or set them in the oracle.service 
+3. Check `config.py` for configuration - create a .env in to set necessesary variables or set them in the oracle.service. 
+Set any additional flags in tx_config - i.e --node 
 
 4. Create a virtual environment:
    ```
