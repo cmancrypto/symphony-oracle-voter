@@ -56,7 +56,7 @@ This guide will walk you through the process of setting up the Symphony Oracle V
    ```
    nano oracle.service
    ```
-   Update each instance of `{USER}` field to your username.
+   Update each instance of `{USER}` field to your username and ensure that paths are your actual path - i.e /home/{USER}/symphony/build/symphonyd or /root/symphony/build/symphonyd
 
 9. Copy the service file to the systemd directory:
    ```
