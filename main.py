@@ -10,8 +10,22 @@ from vote_handler import process_votes
 from blockchain import get_latest_block, get_current_misses, get_oracle_params, get_current_epoch
 from alerts import telegram, slack
 
-logging.basicConfig(level=logging.DEBUG if debug else logging.INFO)
+logging.basicConfig(
+    level=logging.DEBUG if debug else logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler('oracle_votes.log')
+    ]
+)
+
+# Get logger for this module
 logger = logging.getLogger(__name__)
+
+# Configure handlers for long lines
+for handler in logger.handlers:
+    handler.terminator = '\n'
+
 logger.debug("logging test")
 
 
