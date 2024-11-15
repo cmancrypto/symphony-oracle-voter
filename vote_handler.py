@@ -212,6 +212,7 @@ def check_tx(tx, tx_type="tx"):
             tx_code = int(tx_data["tx_response"]["code"])
         except Exception as e:
             logger.error(f"Error getting {tx_type} response from endpoint for {tx_hash}: {e}")
+            return True, f"Failed to parse transaction response: {e}"
         if tx_code != 0 or tx_code is None:
             logger.error(f"error in submitting {tx_type}, code returned non zero")
             return True, f"{tx_type} error"
