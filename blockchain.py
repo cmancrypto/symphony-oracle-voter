@@ -121,12 +121,17 @@ def run_symphonyd_command(command: List[str]) -> dict:
         )
         stdout, stderr = process.communicate(input=f"{key_password}\n")
 
+        # Log both stdout and stderr
+        if stderr:
+            logger.error(f"Command stderr: {stderr}")
+        if stdout:
+            logger.debug(f"Command stdout: {stdout}")
+
         if process.returncode != 0:
             logger.error(f"Command failed with return code {process.returncode}")
-            logger.error(f"Error output: {stderr}")
-            raise subprocess.CalledProcessError(process.returncode, command, stdout, stderr)
+            logger.error(f"Command: {' '.join(command)}")
+            return {"error": stderr}
 
-        logger.debug(stdout)
             # Try to parse the output as JSON
         try:
             return json.loads(stdout)
