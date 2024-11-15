@@ -151,15 +151,18 @@ def run_symphonyd_command(command: List[str]) -> dict:
         )
         stdout, stderr = process.communicate(input=f"{key_password}\n")
 
-        # Log both stdout and stderr
-        if stderr:
-            logger.error(f"Command stderr:\n{stderr}")
+        # Log gas estimate as info if present
+        if "gas estimate:" in stderr:
+            gas_estimate = stderr.split("gas estimate:")[1].strip()
+            logger.info(f"Gas estimate: {gas_estimate}")
+
         if stdout:
             logger.debug(f"Command stdout:\n{stdout}")
 
         if process.returncode != 0:
             logger.error(f"Command failed with return code {process.returncode}")
             logger.error(f"Command: {' '.join(command)}")
+            logger.error(f"Command stderr: {stderr}")
             return {"error": stderr, "returncode": process.returncode}
 
             # Try to parse the output as JSON
