@@ -5,6 +5,7 @@ import logging
 from prometheus_client import start_http_server
 
 from config import *
+from pre_flight_check import wait_for_ready
 from price_feeder import get_prices, format_prices
 from vote_handler import process_votes
 from blockchain import get_latest_block, get_current_misses, get_oracle_params, get_current_epoch
@@ -28,6 +29,11 @@ def main():
     last_hash = []
     last_active = []
     misses = 0
+
+    ##perform our pre-flight checks
+    if not wait_for_ready():
+        logger.error("preflight checks failed")
+        exit(1)
 
 
     while True:
