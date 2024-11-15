@@ -1,6 +1,7 @@
 import logging
 import time
 import hashlib
+import requests
 from hash_handler import get_aggregate_vote_hash
 from config import *
 from blockchain import get_my_current_prevote_hash, aggregate_exchange_rate_prevote, aggregate_exchange_rate_vote, \
@@ -164,24 +165,59 @@ def perform_vote_only(vote_args):
     return execute_transaction(aggregate_exchange_rate_vote, "vote", *vote_args)
 
 
-def handle_tx_return(tx, tx_type):
-    """Handle the return of a transaction and check its status.
-
-    This function waits for the block to confirm, then checks the transaction status.
-
-    Args:
-        tx (dict): The transaction object returned from the blockchain.
-        tx_type (str): The type of transaction (e.g., "vote", "prevote").
-
-    Returns:
-        bool: True if there was an error with the transaction, False otherwise.
-
+def wait_for_tx_indexed(tx_hash, max_attempts=5, delay_between_attempts=1.0):
     """
+    Wait for a transaction to be indexed by LCD.
+    Returns (success, response_time, final_response)
+    """
+    logger.info(f"Waiting for tx {tx_hash} to be indexed...")
+    start_time = time.time()
+
+    for attempt in range(max_attempts):
+        try:
+            response = requests.get(
+                f"{lcd_address}/cosmos/tx/v1beta1/txs/{tx_hash}",
+                timeout=http_timeout
+            ).json()
+
+            if "tx_response" in response:
+                elapsed = time.time() - start_time
+                logger.info(f"TX {tx_hash} indexed after {elapsed:.2f}s on attempt {attempt + 1}")
+                return True, elapsed, response
+
+            logger.debug(f"Attempt {attempt + 1}: TX not indexed yet. Response: {response}")
+
+        except Exception as e:
+            logger.error(f"Attempt {attempt + 1} failed: {str(e)}")
+
+        time.sleep(delay_between_attempts)
+
+    total_time = time.time() - start_time
+    logger.error(f"TX {tx_hash} not indexed after {total_time:.2f}s and {max_attempts} attempts")
+    return False, total_time, None
+
+def handle_tx_return(tx, tx_type):
+    """Handle the return of a transaction and check its status."""
     err_flag = False
-    wait_for_block()  # handle waiting for  the current block to confirm
+    tx_hash = tx.get("txhash")
+
+    # First wait for block
+    if not wait_for_block():
+        logger.error(f"Failed waiting for block confirmation for tx: {tx_hash}")
+        return True
+
+    # Then wait for indexing
+    indexed, index_time, response = wait_for_tx_indexed(tx_hash)
+    if not indexed:
+        logger.error(f"Transaction {tx_hash} failed to index within timeout")
+        return True
+
+    logger.info(f"Transaction {tx_hash} indexed in {index_time:.2f}s")
+
+    # Now check the transaction
     vote_check_error_flag, vote_check_error_msg = check_tx(tx, tx_type)
     if vote_check_error_flag:
-        logger.error(f"{tx_type} failed or failed to return data : {vote_check_error_msg}")
+        logger.error(f"{tx_type} failed or failed to return data: {vote_check_error_msg}")
         err_flag = True
     return err_flag
 
