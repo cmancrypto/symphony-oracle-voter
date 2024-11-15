@@ -98,12 +98,38 @@ def check_oracle_module() -> Tuple[bool, str]:
     """Verify oracle module is accessible and configured."""
     try:
         # Check oracle parameters
-        params, err_flag = get_oracle_params()
-        if err_flag or not params:
+        result, err_flag = get_oracle_params()
+        if err_flag:
             return False, "Failed to get oracle parameters"
 
-        if "vote_period" not in params["params"]:
-            return False, "Oracle parameters missing vote_period"
+        # No need to check for nested params since the get_oracle_params()
+        # function already extracts the params field
+        if not result:
+            return False, "Empty oracle parameters returned"
+
+        # Check required parameters exist and are valid
+        required_params = [
+            "vote_period",
+            "vote_threshold",
+            "reward_band",
+            "reward_distribution_window",
+            "slash_fraction",
+            "slash_window",
+            "min_valid_per_window"
+        ]
+
+        missing_params = []
+        for param in required_params:
+            if param not in result:
+                missing_params.append(param)
+
+        if missing_params:
+            return False, f"Missing oracle parameters: {', '.join(missing_params)}"
+
+        # Log the parameters for verification
+        logger.info("Oracle parameters found:")
+        for param in required_params:
+            logger.info(f"  {param}: {result[param]}")
 
         # Check if we can get current misses
         if validator:
