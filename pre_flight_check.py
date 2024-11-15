@@ -102,7 +102,7 @@ def check_oracle_module() -> Tuple[bool, str]:
         if err_flag or not params:
             return False, "Failed to get oracle parameters"
 
-        if "vote_period" not in params:
+        if "vote_period" not in params["params"]:
             return False, "Oracle parameters missing vote_period"
 
         # Check if we can get current misses
