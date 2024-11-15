@@ -26,9 +26,10 @@ This guide will walk you through the process of setting up the Symphony Oracle V
    git clone https://github.com/cmancrypto/symphony-oracle-voter.git
    ```
 
-2. Navigate to the project directory:
+2. Navigate to the project directory and checkout current version:
    ```
    cd symphony-oracle-voter
+   git checkout v0.0.2r4
    ```
 3. Check `config.py` for configuration - create a .env in to set necessesary variables or set them in the oracle.service. 
 Set any additional flags in tx_config - i.e --node 
