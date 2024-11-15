@@ -102,19 +102,18 @@ def check_oracle_module() -> Tuple[bool, str]:
         if err_flag:
             return False, "Failed to get oracle parameters"
 
-        # No need to check for nested params since the get_oracle_params()
-        # function already extracts the params field
         if not result:
             return False, "Empty oracle parameters returned"
 
         # Check required parameters exist and are valid
         required_params = [
-            "vote_period",
+            "vote_period_epoch_identifier",
             "vote_threshold",
             "reward_band",
             "reward_distribution_window",
+            "whitelist",
             "slash_fraction",
-            "slash_window",
+            "slash_window_epoch_identifier",
             "min_valid_per_window"
         ]
 
