@@ -163,7 +163,7 @@ if chain_id == "testing":
     }
     active_candidate = [
         "usdr",
-        #"peppe"
+        "peppe"
     ]
 
 
