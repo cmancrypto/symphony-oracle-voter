@@ -154,13 +154,6 @@ active_candidate = [
     "uvnd"
 ]
 
-# hardfix the active set. does not care about stop_oracle_trigger_recent_diverge
-
-hardfix_active_set = [
-    "uusd",
-    "ukhd",
-    "uvnd",
-]
 
 ##custom config for testing chain - to be removed for mainnet.
 if chain_id == "testing":
@@ -173,12 +166,7 @@ if chain_id == "testing":
         "peppe"
     ]
 
-    # hardfix the active set. does not care about stop_oracle_trigger_recent_diverge
 
-    hardfix_active_set = [
-        "usdr",
-        "peppe"
-    ]
 # denoms for abstain votes. it will vote abstain for all denoms in this list.
 # this is deprecated for now
 abstain_set = [

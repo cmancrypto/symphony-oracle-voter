@@ -27,7 +27,6 @@ def main():
     last_price = {}
     last_salt = {}
     last_hash = []
-    last_active = []
     misses = 0
 
     ##perform our pre-flight checks
@@ -43,12 +42,12 @@ def main():
                 and not latest_block_err_flag
                 and current_epoch > last_prevoted_epoch):
 
-                prices, active = get_prices()
+                prices = get_prices()
                 prices = format_prices(prices)
 
                 if prices:
-                    last_price, last_salt, last_hash, last_active = process_votes(prices, active, last_price, last_salt,
-                                                                                  last_hash, last_active, current_epoch)
+                    last_price, last_salt, last_hash = process_votes(prices, last_price, last_salt,
+                                                                                  last_hash,  current_epoch)
                     last_prevoted_epoch = current_epoch
 
                 currentmisses = get_current_misses()

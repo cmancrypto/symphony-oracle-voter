@@ -9,7 +9,9 @@ from blockchain import get_my_current_prevote_hash, aggregate_exchange_rate_prev
 
 logger = logging.getLogger(__name__)
 
-def process_votes(prices, active, last_price, last_salt, last_hash, last_active, epoch):
+
+def process_votes(prices, last_price, last_salt, last_hash, epoch):
+
     """Process votes for a given epoch.
 
         This function handles the voting process, including both votes and pre votes,
@@ -17,15 +19,13 @@ def process_votes(prices, active, last_price, last_salt, last_hash, last_active,
 
         Args:
             prices (str): Current prices to vote on.
-            active (list): Current active set to vote on.
             last_price (dict): Prices from the last successful vote.
             last_salt (str): Salt used in the last pre_vote
             last_hash (str): Hash from the last pre_vote
-            last_active (list): Active status from the last pre_vote
             epoch (int): Current epoch number.
 
         Returns:
-            tuple: (this_price, this_salt, this_hash, active)
+            tuple: (this_price, this_salt, this_hash)
         """
 
     # set initial states
@@ -68,7 +68,7 @@ def process_votes(prices, active, last_price, last_salt, last_hash, last_active,
 
             METRIC_VOTES.inc()  # increment this regardless of vote outcome
             if not vote_err and not pre_vote_err:  # if both votes succeed, no need to continue in loop
-                return this_price, this_salt, this_hash, active
+                return this_price, this_salt, this_hash
 
             if not vote_err:
                 voted = True  # this is so we don't revote if only the pre_vote fails
@@ -84,7 +84,7 @@ def process_votes(prices, active, last_price, last_salt, last_hash, last_active,
                 last_salt, last_price, from_account)
             vote_err = perform_vote_only(vote_args)
             if not vote_err:
-                return this_price, this_salt, this_hash, active
+                return this_price, this_salt, this_hash
 
         else: #if either hash doesn't match last or not prevoted do prevotes only
             logger.info("Broadcast prevotes only...")
@@ -92,12 +92,12 @@ def process_votes(prices, active, last_price, last_salt, last_hash, last_active,
                 this_salt,this_price, from_account)
             pre_vote_err = perform_prevote_only(prevote_args)
             if not pre_vote_err:
-                return this_price, this_salt, this_hash, active
+                return this_price, this_salt, this_hash
 
         # this is only reachable if there have been errors in either vote or prevote
         retry = retry + 1
         logger.error(f"retrying vote/prevote {retry} of {max_retry_per_epoch} ")
-    return this_price, this_salt, this_hash, active
+    return this_price, this_salt, this_hash
 
 
 def execute_transaction(func, tx_type, *args):
