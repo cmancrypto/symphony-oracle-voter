@@ -52,7 +52,7 @@ gas_adjustment = os.getenv("GAS_ADJUSTMENT","2")
 fee_amount = os.getenv("FEE_AMOUNT", "500000")
 keyring_back_end = os.getenv("KEY_BACKEND","os")
 symphonyd_path = os.getenv('SYMPHONYD_PATH', 'symphonyd') #ensure symphonyd properly on PATH
-node =  os.getenv("TENDERMINT_RPC", "tcp://localhost:26657") # this is what port you run your node tendermint RPC on
+rpc_node =  os.getenv("TENDERMINT_RPC", "tcp://localhost:26657") # this is what port you run your node tendermint RPC on
 
 """
 Blockchain Config 
@@ -73,7 +73,8 @@ tx_config = [
     "--gas-adjustment", gas_adjustment,
     "--gas", "auto",
     "--keyring-backend", keyring_back_end,
-    "--broadcast-mode", "sync"
+    "--broadcast-mode", "sync",
+    "--node", rpc_node
 ]
 max_block_confirm_wait_time= os.getenv("BLOCK_WAIT_TIME", "10") #define how long is the maximum we should wait for next block in seconds
 max_retry_per_epoch = int(os.getenv("MAX_RETRY_PER_EPOCH", "1"))
