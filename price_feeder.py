@@ -3,6 +3,7 @@ import logging
 import statistics
 from config import *
 from exchange_apis import * #TODO- remove the *, dont be lazy
+from price_validation import validate_prices
 
 logger = logging.getLogger(__name__)
 
@@ -36,13 +37,13 @@ def get_prices():
             METRIC_MARKET_PRICE.labels(denom).set(market_price)
             prices[denom] = market_price
 
-        if len(hardfix_active_set) == 0:
-            active = [denom["denom"] for denom in swap_price["exchange_rates"]]
-        else:
-            active = hardfix_active_set
-        return prices, active
+        adjusted_prices = validate_prices(prices)
+        if not adjusted_prices:
+            return None
+
+        return adjusted_prices
     else:
-        return None, None
+        return None
 
 def combine_fx(res_fxs):
     fx_combined = {fx: [] for fx in fx_map.values()}
