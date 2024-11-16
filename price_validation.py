@@ -1,58 +1,58 @@
 import logging
 import requests
 from typing import Dict, List, Tuple
-from config import lcd_address, module_name, http_timeout, METRIC_OUTBOUND_ERROR
+
+from blockchain import get_oracle_params
+from config import METRIC_OUTBOUND_ERROR
 
 logger = logging.getLogger(__name__)
 
 
-def get_valid_denoms() -> Tuple[bool, List[str]]:
-    """Get list of valid denominations from exchange rates endpoint."""
+def get_valid_denoms() -> Tuple[bool, List[Dict[str, str]]]:
+    """Get list of valid denominations from oracle params whitelist."""
     try:
-        response = requests.get(
-            f"{lcd_address}/{module_name}/oracle/v1beta1/denoms/exchange_rates",
-            timeout=http_timeout
-        )
-        if not response.ok:
-            logger.error(f"Failed to get exchange rates: {response.status_code}")
-            return True, [] #return is err flag, rates format
+        params, err_flag = get_oracle_params()
+        if err_flag or not params:
+            logger.error("Failed to get oracle parameters")
+            return True, []
 
-        data = response.json()
-        exchange_rates = data.get("exchange_rates", [])
+        whitelist = params.get("whitelist", [])
+        if not whitelist:
+            logger.error("No assets found in whitelist")
+            return True, []
 
-        valid_denoms = [rate["denom"] for rate in exchange_rates]
-        logger.debug(f"Valid denominations from exchange rates: {valid_denoms}")
-
-        return False, valid_denoms
+        logger.debug(f"Valid denominations from whitelist: {[asset['name'] for asset in whitelist]}")
+        return False, whitelist
 
     except Exception as e:
-        logger.error(f"Error getting exchange rates: {str(e)}")
+        logger.error(f"Error getting whitelist: {str(e)}")
         METRIC_OUTBOUND_ERROR.labels('lcd').inc()
         return True, []
 
 
 def validate_prices(prices: Dict[str, float]) -> Dict[str, float]:
     """
-    Validate prices against available exchange rates and adjust as needed.
+    Validate prices against oracle whitelist and adjust as needed.
 
     Args:
         prices: Dictionary of denom to price mappings
 
     Returns:
         Adjusted prices dictionary with:
-        - Only denoms that exist in exchange rates
-        - Zero prices for exchange rate denoms without prices
+        - Only denoms that exist in whitelist
+        - Zero prices for whitelisted denoms without prices
     """
-    err_flag, valid_denoms = get_valid_denoms()
+    err_flag, whitelist = get_valid_denoms()
     if err_flag:
-        logger.error("Failed to validate prices due to exchange rates query failure")
+        logger.error("Failed to validate prices due to whitelist query failure")
         return {}
 
-    if not valid_denoms:
-        logger.error("No valid denominations found in exchange rates")
+    if not whitelist:
+        logger.error("No valid denominations found in whitelist")
         return {}
 
     adjusted_prices = {}
+    valid_denoms = [asset["name"] for asset in whitelist]
 
     # Set zero prices for all valid denoms first
     for denom in valid_denoms:
@@ -64,7 +64,7 @@ def validate_prices(prices: Dict[str, float]) -> Dict[str, float]:
             adjusted_prices[denom] = price
             logger.debug(f"Price for {denom}: {price}")
         else:
-            logger.warning(f"Skipping {denom} as it's not valid asset ine exchange rate query")
+            logger.warning(f"Skipping {denom} as it's not in whitelist")
 
     # Log final adjustments
     for denom, price in adjusted_prices.items():
