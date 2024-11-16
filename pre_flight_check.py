@@ -125,10 +125,23 @@ def check_oracle_module() -> Tuple[bool, str]:
         if missing_params:
             return False, f"Missing oracle parameters: {', '.join(missing_params)}"
 
-        # Log the parameters for verification
+        # Check whitelist
+        whitelist = result.get("whitelist", [])
+        if not whitelist:
+            return False, "No assets found in whitelist"
+
+        # Log whitelisted assets
+        logger.info("Whitelisted assets:")
+        for asset in whitelist:
+            if "name" not in asset or "tobin_tax" not in asset:
+                return False, f"Invalid whitelist entry format: {asset}"
+            logger.info(f"  Asset: {asset['name']}, Tobin Tax: {asset['tobin_tax']}")
+
+        # Log other parameters for verification
         logger.info("Oracle parameters found:")
         for param in required_params:
-            logger.info(f"  {param}: {result[param]}")
+            if param != "whitelist":  # Skip whitelist as we've already logged it
+                logger.info(f"  {param}: {result[param]}")
 
         # Check if we can get current misses
         if validator:
