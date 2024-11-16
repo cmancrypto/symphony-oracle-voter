@@ -141,7 +141,7 @@ def check_oracle_module() -> Tuple[bool, str]:
         logger.info("Oracle parameters found:")
         for param in required_params:
             if param != "whitelist":  # Skip whitelist as we've already logged it
-                logger.info(f"  {param}: {result[param]}")
+                logger.debug(f"  {param}: {result[param]}")
 
         # Check if we can get current misses
         if validator:
