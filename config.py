@@ -159,11 +159,11 @@ active_candidate = [
 if chain_id == "testing":
     fx_map = {
         "usdr": "HKD",
-        #"peppe":"INR",
+        "peppe":"INR",
     }
     active_candidate = [
         "usdr",
-        "peppe"
+        #"peppe"
     ]
 
 
