@@ -139,7 +139,7 @@ def get_my_current_prevote_hash():
 
 def run_symphonyd_command(command: List[str]) -> dict:
     try:
-        logger.info(f"Executing command: {' '.join(command)}")
+        logger.debug(f"Executing command: {' '.join(command)}")
 
         # Start the command
         process = subprocess.Popen(
