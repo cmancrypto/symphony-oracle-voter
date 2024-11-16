@@ -182,7 +182,7 @@ def wait_for_tx_indexed(tx_hash, max_attempts=5, delay_between_attempts=1.0):
 
             if "tx_response" in response:
                 elapsed = time.time() - start_time
-                logger.info(f"TX {tx_hash} indexed after {elapsed:.2f}s on attempt {attempt + 1}")
+                logger.debug(f"TX {tx_hash} indexed after {elapsed:.2f}s on attempt {attempt + 1}")
                 return True, elapsed, response
 
             logger.debug(f"Attempt {attempt + 1}: TX not indexed yet. Response: {response}")
@@ -212,7 +212,7 @@ def handle_tx_return(tx, tx_type):
         logger.error(f"Transaction {tx_hash} failed to index within timeout")
         return True
 
-    logger.info(f"Transaction {tx_hash} indexed in {index_time:.2f}s")
+    logger.debug(f"Transaction {tx_hash} indexed in {index_time:.2f}s")
 
     # Now check the transaction
     vote_check_error_flag, vote_check_error_msg = check_tx(tx, tx_type)
