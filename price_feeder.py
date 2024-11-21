@@ -66,7 +66,7 @@ def get_prices():
                 continue
 
             # If we have everything, calculate the price
-            market_price = float(osmosis_symphony_price) * real_fx[fx_map[denom]]
+            market_price = float(osmosis_symphony_price) / real_fx[fx_map[denom]]
             prices[denom] = market_price
             METRIC_MARKET_PRICE.labels(denom).set(market_price)
 
