@@ -158,12 +158,14 @@ active_candidate = [
 ##custom config for testing chain - to be removed for mainnet.
 if chain_id == "testing":
     fx_map = {
-        "usdr": "HKD",
-        "peppe":"INR",
+        "uusd": "USD",
+        "ukhd": "HKD",  # there is a typo here, but it's onchain also
+        "uvnd": "INR",  ##this is so we can write USDINR to UVND, this should be removed before mainnet
     }
     active_candidate = [
-        "usdr",
-        "peppe"
+        "uusd",
+        "ukhd",
+        "uvnd"
     ]
 
 
