@@ -154,7 +154,7 @@ def run_symphonyd_command(command: List[str]) -> dict:
         # Log gas estimate as info if present
         if "gas estimate:" in stderr:
             gas_estimate = stderr.split("gas estimate:")[1].strip()
-            logger.info(f"Gas estimate: {gas_estimate}")
+            logger.debug(f"Gas estimate: {gas_estimate}")
 
         if stdout:
             logger.debug(f"Command stdout:\n{stdout}")
