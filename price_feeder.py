@@ -50,6 +50,7 @@ def get_prices():
             denom = asset["name"]
             if denom == default_base_fx:
                 market_price = 1 / float(osmosis_symphony_price)
+                logger.info(f"uusd{market_price}")
                 prices[denom] = market_price
                 METRIC_MARKET_PRICE.labels(denom).set(market_price)
                 continue
