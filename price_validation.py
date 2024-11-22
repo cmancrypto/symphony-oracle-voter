@@ -71,6 +71,6 @@ def validate_prices(prices: Dict[str, float]) -> Dict[str, float]:
         if price == 0:
             logger.info(f"Using zero price for {denom}")
         else:
-            logger.info(f"Using provided price for {denom}: {price}")
+            logger.info(f"Using provided price for {denom}: {price} MLD per {denom}")
 
     return adjusted_prices
