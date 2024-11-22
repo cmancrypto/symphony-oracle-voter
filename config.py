@@ -98,9 +98,9 @@ bid_ask_spread_max = float(os.getenv("BID_ASK_SPREAD_MAX", "0.05"))
 #Osmosis LCD URL
 osmosis_lcd = os.getenv("OSMOSIS_LCD", "https://lcd.testnet.osmosis.zone/")
 #pool ID
-osmosis_pool_id= os.getenv("OSMOSIS_POOL_ID", "588")
+osmosis_pool_id= os.getenv("OSMOSIS_POOL_ID", "666")
 #Osmosis Base asset (Note/Symphony)
-osmosis_base_asset=os.getenv("OSMOSIS_BASE_ASSET", "ibc/B8435C53F8B5CC87703531FF736508875DF473D0C231E93A3EF5C2C934E562A4")
+osmosis_base_asset=os.getenv("OSMOSIS_BASE_ASSET", "ibc/C5B7196709BDFC3A312B06D7292892FA53F379CD3D556B65DB00E1531D471BBA")
 #Osmosis quote asset (uosmo)
 osmosis_quote_asset=os.getenv("OSMOSIS_QUOTE_ASSET", "uosmo")
 osmosis_quote_asset_ticker="OSMO"
