@@ -165,7 +165,7 @@ def perform_vote_only(vote_args):
     return execute_transaction(aggregate_exchange_rate_vote, "vote", *vote_args)
 
 
-def wait_for_tx_indexed(tx_hash, max_attempts=5, delay_between_attempts=1.0):
+def wait_for_tx_indexed(tx_hash, max_attempts=tx_indexer_retries, delay_between_attempts=tx_indexer_wait):
     """
     Wait for a transaction to be indexed by LCD.
     Returns (success, response_time, final_response)

@@ -117,7 +117,8 @@ alertmisses = os.getenv("MISS_ALERTS", "true") == "true"
 debug = os.getenv("DEBUG", "false") == "true"
 metrics_port = os.getenv("METRICS_PORT", "19000")
 
-
+tx_indexer_wait=float(os.getenv("TX_WAIT", "2.0"))
+tx_indexer_retries=int(os.getenv("TX_RETRIES","10"))
 
 """
 Prometheus Metrics 
