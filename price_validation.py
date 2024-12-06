@@ -61,7 +61,7 @@ def validate_prices(prices: Dict[str, float]) -> Dict[str, float]:
     # Update with actual prices where we have them
     for denom, price in prices.items():
         if denom in valid_denoms:
-            adjusted_prices[denom] = price
+            adjusted_prices[denom] = round(price,12) #allows up to 18 - but will do 12
             logger.debug(f"Price for {denom}: {price}")
         else:
             logger.warning(f"Skipping {denom} as it's not in whitelist")
