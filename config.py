@@ -139,22 +139,20 @@ METRIC_OUTBOUND_LATENCY = Histogram("terra_oracle_request_latency", "Outbound HT
 
 #fx-symbol list to query fx rates for - USD not required
 #TODO- configure with Symphony actual symbol list
-fx_symbol_list= ["HKD","INR"]
+fx_symbol_list= ["HKD","BTC","ETH","EUR","XAU","IDR"]
 
 default_base_fx = "uusd"
 
 # parameters
 fx_map = {
     "uusd": "USD",
-    "ukhd": "HKD", #there is a typo here, but it's onchain also
-    "uvnd": "INR", ##this is so we can write USDINR to UVND, this should be removed before mainnet
+    "uhkd": "HKD",
+    "ubtc":"BTC",
+    "ueth":"ETH",
+    "ueur" :"EUR",
+    "uxau": "XAU",
+    "uidr" : "IDR"
 }
-active_candidate = [
-    "uusd",
-    "ukhd",
-    "uvnd"
-]
-
 
 ##custom config for testing chain - to be removed for mainnet.
 if chain_id == "testing":
@@ -163,11 +161,7 @@ if chain_id == "testing":
         "ukhd": "HKD",  # there is a typo here, but it's onchain also
         "uvnd": "INR",  ##this is so we can write USDINR to UVND, this should be removed before mainnet
     }
-    active_candidate = [
-        "uusd",
-        "ukhd",
-        "uvnd"
-    ]
+
 
 
 # denoms for abstain votes. it will vote abstain for all denoms in this list.
