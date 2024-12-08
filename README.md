@@ -31,8 +31,17 @@ This guide will walk you through the process of setting up the Symphony Oracle V
    cd symphony-oracle-voter
    git checkout v0.0.4r3
    ```
-3. Check `config.py` for configuration - create a .env in to set necessesary variables or set them in the oracle.service. 
-Set any additional flags in tx_config - i.e --node 
+3. Modify .env_sample to set the required configuration. The following parameters are key:
+- VALIDATOR_ADDRESS - symphonyvaloper prefix address
+- VALIDATOR_ACC_ADDRESS - symphony prefix notation for the validator address 
+- FEEDER_ADDRESS - if wanting to use a delegate feeder to send vote/prevote to not expose the main validator account 
+  - from CLI $ symphonyd tx oracle set-feeder symphony1... where "symphony1..." is the address you want to delegate your voting rights to.
+  - delete if not using feeder 
+- KEY_BACKEND - actual backend for either the feeder (if using) or the validator (if not using feeder)
+- KEY_PASSWORD - ONLY FOR OS BACKEND
+- SYMPHONY_LCD = http://localhost:1317 OR TO MATCH YOUR ACTUAL LCD PORT
+- TENDERMINT_RPC = tcp://localhost:26657 or your actual tendermint RPC address
+If desired, other parameters can be set - check config.py for full list - i.e gas prices, gas multiplier etc. 
 
 4. Create a virtual environment:
    ```
