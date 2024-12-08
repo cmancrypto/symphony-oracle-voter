@@ -2,7 +2,7 @@ ARG BUILDPLATFORM="linux/amd64"
 
 FROM ghcr.io/pfc-developer/heighliner/symphony:v0.4.1 AS symphony
 FROM --platform=${BUILDPLATFORM} python:3-bookworm
-LABEL org.opencontainers.image.description="symphony blockchain price feeder"
+LABEL org.opencontainers.image.description="Symphony blockchain price feeder"
 LABEL org.opencontainers.image.source=https://github.com/cmancrypto/symphony-oracle-voter
 
 
