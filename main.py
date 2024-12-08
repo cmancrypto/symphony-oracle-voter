@@ -20,6 +20,7 @@ logger.debug("logging test")
 
 def main():
     logger.debug("main")
+    telegram("Starting Feeder")
     start_http_server(int(metrics_port))
     logger.debug("starting http server")
     last_prevoted_round = 0
