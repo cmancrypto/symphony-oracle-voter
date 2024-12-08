@@ -20,8 +20,8 @@ ENV FEEDER_ADDRESS=symphonyxxx
 ENV FEEDER_SEED=""
 
 #ONLY FOR TELEGRAM NOTIFICATIONS DELETE OTHERWISE
-ENV TELEGRAM_TOKEN=""
-ENV TELEGRAM_CHAT_ID=""
+ENV TELEGRAM_TOKEN=
+ENV TELEGRAM_CHAT_ID=
 # MATCH YOUR ACTUAL LCD PORT
 ENV SYMPHONY_LCD=http://localhost:1317 
 # your actual tendermint RPC address%
@@ -30,5 +30,7 @@ ENV TENDERMINT_RPC=tcp://localhost:26657
 ENV PYTHON_ENV=production
 ENV LOG_LEVEL=INFO
 ENV DEBUG=false
+
+EXPOSE 19000
 CMD ["/symphony/oracle.sh"]
 #CMD ["/usr/local/bin/python","/symphony/main.py"]
