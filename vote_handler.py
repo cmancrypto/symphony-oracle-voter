@@ -96,7 +96,8 @@ def process_votes(prices, last_price, last_salt, last_hash, epoch):
 
         # this is only reachable if there have been errors in either vote or prevote
         retry = retry + 1
-        logger.error(f"retrying vote/prevote {retry} of {max_retry_per_epoch} ")
+        if retry <= max_retry_per_epoch:
+            logger.error(f"retrying vote/prevote {retry} of {max_retry_per_epoch} ")
     return this_price, this_salt, this_hash
 
 
@@ -169,7 +170,13 @@ def wait_for_tx_indexed(tx_hash, max_attempts=tx_indexer_retries, delay_between_
     """
     Wait for a transaction to be indexed by LCD.
     Returns (success, response_time, final_response)
+
+    If tx_hash is None, immediately returns failure without waiting.
     """
+    if tx_hash is None:
+        logger.warning("Transaction hash is None, skipping indexing wait")
+        return False, 0, None
+
     logger.info(f"Waiting for tx {tx_hash} to be indexed...")
     start_time = time.time()
 
