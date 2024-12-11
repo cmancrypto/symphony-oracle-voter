@@ -5,10 +5,92 @@ import shutil
 import subprocess
 from typing import Tuple, Dict, Any
 
-from blockchain import get_oracle_params, get_current_misses
+from blockchain import get_oracle_params, get_current_misses, run_symphonyd_command
+from vote_handler import wait_for_tx_indexed
 from config import *
 
 logger = logging.getLogger(__name__)
+
+
+def check_account_balance() -> Tuple[bool, str]:
+    """Check if the account has sufficient balance for operations."""
+    try:
+        # Determine which account to check
+        account_address = feeder if feeder else validator_account
+        if not account_address:
+            return False, "No account address configured to check balance"
+
+        # Query account balance
+        response = requests.get(
+            f"{lcd_address}/cosmos/bank/v1beta1/balances/{account_address}",
+            timeout=http_timeout
+        )
+        if not response.ok:
+            return False, f"Failed to get account balance: {response.status_code}"
+
+        balances = response.json().get("balances", [])
+        note_balance = 0
+
+        # Find NOTE balance
+        for balance in balances:
+            if balance["denom"] == "note":
+                note_balance = int(balance["amount"])
+                break
+
+        if note_balance < 100000:
+            return False, f"Account balance too low: {note_balance} note (minimum 100000 required)"
+
+        logger.info(f"Account balance: {note_balance} note")
+        return True, "Account balance check passed"
+
+    except Exception as e:
+        return False, f"Error checking account balance: {str(e)}"
+
+
+def test_transaction_indexing() -> Tuple[bool, str]:
+    """Test transaction indexing by sending a small self-transfer."""
+    try:
+        # Determine which account to use
+        from_address = feeder if feeder else validator_account
+        if not from_address:
+            return False, "No account address configured for test transaction"
+
+        # Prepare test transaction
+        command = [
+            symphonyd_path, "tx", "bank", "send",
+            from_address, from_address,
+            "1note",
+            "--from", from_address,
+            "--output", "json",
+            "-y"
+        ]
+        command.extend(tx_config)
+
+        # Execute test transaction
+        result = run_symphonyd_command(command)
+        if "error" in result:
+            return False, f"Failed to send test transaction: {result['error']}"
+
+        tx_hash = result.get("txhash")
+        if not tx_hash:
+            return False, "No transaction hash returned from test transaction"
+
+        # Wait for transaction indexing
+        indexed, index_time, response = wait_for_tx_indexed(tx_hash)
+        if not indexed:
+            return False, f"Test transaction {tx_hash} failed to index within timeout"
+
+        # Check transaction status
+        if response and "tx_response" in response:
+            code = response["tx_response"].get("code", 1)
+            if code != 0:
+                return False, f"Test transaction failed with code {code}"
+
+        logger.info(f"Test transaction {tx_hash} successfully indexed in {index_time:.2f}s")
+        return True, "Transaction indexing test passed"
+
+    except Exception as e:
+        return False, f"Error testing transaction indexing: {str(e)}"
 
 
 def check_environment() -> Tuple[bool, str]:
@@ -213,7 +295,9 @@ def run_preflight_checks() -> Dict[str, Any]:
         ("LCD Health", check_lcd_health),
         ("Oracle Module", check_oracle_module),
         ("Validator Config", check_validator_config),
-        ("Price Feeder Config", check_price_feeder_config)
+        ("Price Feeder Config", check_price_feeder_config),
+        ("Account Balance", check_account_balance),
+        ("Transaction Indexing", test_transaction_indexing)
     ]
 
     for check_name, check_func in checks:
