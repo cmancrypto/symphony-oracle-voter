@@ -55,21 +55,30 @@ def test_transaction_indexing() -> Tuple[bool, str]:
         if not from_address:
             return False, "No account address configured for test transaction"
 
-        # Prepare test transaction
+        # Prepare test transaction using the same configuration as voting transactions
         command = [
             symphonyd_path, "tx", "bank", "send",
-            from_address, from_address,
-            "1note",
+            from_address,  # sender
+            from_address,  # receiver (self-transfer)
+            "1note",  # amount
             "--from", from_address,
             "--output", "json",
-            "-y"
+            "-y"  # skip confirmation
         ]
+
+        # Add the standard tx_config that includes chain-id, gas prices, etc.
         command.extend(tx_config)
 
-        # Execute test transaction
+        # Execute test transaction using the same function as voting
         result = run_symphonyd_command(command)
+
         if "error" in result:
-            return False, f"Failed to send test transaction: {result['error']}"
+            logger.error(f"Test transaction command failed: {result.get('error')}")
+            if "returncode" in result:
+                logger.error(f"Return code: {result['returncode']}")
+            if "raw_output" in result:
+                logger.error(f"Raw output: {result['raw_output']}")
+            return False, f"Failed to send test transaction: {result.get('error')}"
 
         tx_hash = result.get("txhash")
         if not tx_hash:
@@ -84,7 +93,15 @@ def test_transaction_indexing() -> Tuple[bool, str]:
         if response and "tx_response" in response:
             code = response["tx_response"].get("code", 1)
             if code != 0:
-                return False, f"Test transaction failed with code {code}"
+                raw_log = response["tx_response"].get("raw_log", "No raw log available")
+                return False, f"Test transaction failed with code {code}. Raw log: {raw_log}"
+
+            # Log successful gas usage for reference
+            gas_used = response["tx_response"].get("gas_used", "unknown")
+            gas_wanted = response["tx_response"].get("gas_wanted", "unknown")
+            logger.info(f"Test transaction gas usage - Used: {gas_used}, Wanted: {gas_wanted}")
+        else:
+            return False, "Invalid transaction response format"
 
         logger.info(f"Test transaction {tx_hash} successfully indexed in {index_time:.2f}s")
         return True, "Transaction indexing test passed"
