@@ -3,9 +3,10 @@ import requests
 import time
 import shutil
 import subprocess
-from typing import Tuple, Dict, Any
+from typing import Tuple, Dict, Any, List
 
 from blockchain import get_oracle_params, get_current_misses, run_symphonyd_command
+from exchange_apis import get_band_standard_dataset
 from vote_handler import wait_for_tx_indexed
 from config import *
 
@@ -255,6 +256,67 @@ def check_oracle_module() -> Tuple[bool, str]:
         return False, f"Oracle module check failed: {str(e)}"
 
 
+def check_band_fx_symbols() -> Tuple[bool, str]:
+    """Verify each FX symbol can be retrieved from Band protocol individually."""
+    if "band" not in fx_api_option:
+        return True, "Band FX validation skipped - not using Band Protocol"
+
+    all_symbols_valid = True
+    invalid_symbols = []
+    error_details = []
+
+    # Check each symbol individually
+    for symbol in set(fx_map.values()):
+        if symbol == "USD":  # Skip USD as it's the base currency
+            continue
+
+        try:
+            error_flag, result = get_band_standard_dataset([symbol])
+
+            if error_flag:
+                all_symbols_valid = False
+                invalid_symbols.append(symbol)
+                error_details.append(f"- {symbol}: Failed to get data")
+                continue
+
+            # Verify we got a valid price for this symbol
+            if not result or symbol not in result:
+                all_symbols_valid = False
+                invalid_symbols.append(symbol)
+                error_details.append(f"- {symbol}: No price data returned")
+                continue
+
+            price = result[symbol].get("price")
+            if not price or price <= 0:
+                all_symbols_valid = False
+                invalid_symbols.append(symbol)
+                error_details.append(f"- {symbol}: Invalid price value ({price})")
+                continue
+
+            logger.info(f"Successfully validated Band price for {symbol}: {price}")
+
+        except Exception as e:
+            all_symbols_valid = False
+            invalid_symbols.append(symbol)
+            error_details.append(f"- {symbol}: Exception: {str(e)}")
+
+    if not all_symbols_valid:
+        # Create detailed error message
+        error_msg = "Band Protocol validation failed for the following symbols:\n"
+        error_msg += "\n".join(error_details)
+        error_msg += "\n\nPlease verify these symbols are supported by Band Protocol "
+        error_msg += "or remove them from fx_map if they should not be included."
+
+        # Map invalid symbols back to their denoms for additional context
+        affected_denoms = [denom for denom, symbol in fx_map.items() if symbol in invalid_symbols]
+        if affected_denoms:
+            error_msg += f"\n\nAffected denoms: {', '.join(affected_denoms)}"
+
+        return False, error_msg
+
+    return True, "All Band Protocol FX symbols validated successfully"
+
+
 def check_validator_config() -> Tuple[bool, str]:
     """Verify validator/feeder configuration."""
     if not validator:
@@ -287,13 +349,19 @@ def check_price_feeder_config() -> Tuple[bool, str]:
         if not band_endpoint:
             return False, "Band endpoint not configured"
 
+        # Add Band symbol validation
+        band_check_success, band_check_msg = check_band_fx_symbols()
+        if not band_check_success:
+            return False, band_check_msg
+
     if "alphavantage" in fx_api_option:
         if not alphavantage_key:
             return False, "Alphavantage API key not configured"
 
-    # Check if we have required FX symbols
-    if not fx_symbol_list:
-        return False, "FX symbol list is empty"
+    # Check if fx_map values match fx_symbol_list
+    required_symbols = {symbol for symbol in fx_map.values() if symbol != "USD"}
+    if required_symbols != set(fx_symbol_list):
+        return False, f"FX symbol list mismatch. Required symbols from fx_map: {required_symbols}, Current fx_symbol_list: {set(fx_symbol_list)}"
 
     return True, "Price feeder configuration check passed"
 
@@ -312,7 +380,7 @@ def run_preflight_checks() -> Dict[str, Any]:
         ("LCD Health", check_lcd_health),
         ("Oracle Module", check_oracle_module),
         ("Validator Config", check_validator_config),
-        ("Price Feeder Config", check_price_feeder_config),
+        ("Price Feeder Config", check_price_feeder_config),  # This now includes Band symbol validation
         ("Account Balance", check_account_balance),
         ("Transaction Indexing", test_transaction_indexing)
     ]
