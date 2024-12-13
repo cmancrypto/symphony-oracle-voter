@@ -25,74 +25,40 @@ def get_prices():
     fx_err_flag, real_fx = combine_fx(res_fxs)
     osmosis_err_flag, osmosis_symphony_price = res_osmosis.result()
 
-    all_err_flag = fx_err_flag or osmosis_err_flag or swap_price_err_flag
-    if not all_err_flag:
-        prices = {}
-        # Get whitelist from oracle params for valid denoms
-        params, err_flag = get_oracle_params()
-        if err_flag:
-            logger.error("Failed to get oracle parameters for whitelist")
-            return None
+    prices = {}
 
-        whitelist = params.get("whitelist", [])
-        if not whitelist:
-            logger.error("No whitelisted assets found in oracle parameters")
-            return None
+    # Get whitelist from oracle params for valid denoms
+    params, err_flag = get_oracle_params()
+    if err_flag:
+        logger.error("Failed to get oracle parameters for whitelist")
+        return {}
 
-        logger.debug(f"Processing whitelisted assets: {[asset['name'] for asset in whitelist]}")
-        logger.debug(f"Available FX mappings: {fx_map}")
-        logger.debug(f"Available FX rates: {real_fx}")
+    whitelist = params.get("whitelist", [])
+    if not whitelist:
+        logger.error("No whitelisted assets found in oracle parameters")
+        return {}
 
-        missing_fx_maps = []
-        missing_fx_rates = []
+    logger.debug(f"Processing whitelisted assets: {[asset['name'] for asset in whitelist]}")
 
-        for asset in whitelist:
-            denom = asset["name"]
+    for asset in whitelist:
+        denom = asset["name"]
+        try:
             if denom == default_base_fx:
                 market_price = 1 / float(osmosis_symphony_price)
-                logger.info(f"uusd{market_price}")
                 prices[denom] = market_price
                 METRIC_MARKET_PRICE.labels(denom).set(market_price)
-                continue
-
-            # Check if we have the necessary FX mapping
-            if denom not in fx_map:
-                missing_fx_maps.append(denom)
-                continue
-
-            # Check if we have the FX rate for this asset
-            fx_symbol = fx_map[denom]
-            if fx_symbol not in real_fx:
-                missing_fx_rates.append(denom)
-                logger.warning(f"Missing FX rate for {denom} (FX symbol: {fx_symbol})")
-                continue
-
-            # If we have everything, calculate the price
-            try:
-                market_price = 1/(float(osmosis_symphony_price) * real_fx[fx_map[denom]])
+            elif denom in fx_map and fx_map[denom] in real_fx:
+                market_price = 1 / (float(osmosis_symphony_price) * real_fx[fx_map[denom]])
                 prices[denom] = market_price
                 METRIC_MARKET_PRICE.labels(denom).set(market_price)
-            except (TypeError, ZeroDivisionError) as e:
-                logger.error(f"Error calculating price for {denom}: {str(e)}")
-                continue
+            else:
+                logger.warning(f"Missing FX data for {denom}, will be handled by price validation")
 
-        # Log any missing configurations
-        if missing_fx_maps:
-            logger.warning(f"Missing FX mappings for whitelisted denoms: {missing_fx_maps}")
-        if missing_fx_rates:
-            logger.warning(f"Missing FX rates for denoms: {missing_fx_rates}")
+        except (TypeError, ZeroDivisionError) as e:
+            logger.error(f"Error calculating price for {denom}: {str(e)}")
 
-        if not prices:
-            logger.error("No valid prices could be calculated")
-            return None
-
-        adjusted_prices = validate_prices(prices)
-        if not adjusted_prices:
-            return None
-
-        return adjusted_prices
-    else:
-        return None
+    # validate_prices will handle setting zeros for any missing prices
+    return validate_prices(prices)
 
 
 def combine_fx(res_fxs):
@@ -124,9 +90,12 @@ def combine_fx(res_fxs):
 def weighted_price(prices, weights):
     return sum(p * w for p, w in zip(prices, weights)) / sum(weights)
 
-def format_prices(prices) -> str :
+
+def format_prices(prices) -> str:
+    if not prices:
+        return ""
+
     formatted_prices = []
     for denom, price in prices.items():
         formatted_prices.append(f"{price}{denom}")
     return ','.join(formatted_prices)
-
