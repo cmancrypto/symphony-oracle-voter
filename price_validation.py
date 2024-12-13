@@ -32,15 +32,16 @@ def get_valid_denoms() -> Tuple[bool, List[Dict[str, str]]]:
 
 def validate_prices(prices: Dict[str, float]) -> Dict[str, float]:
     """
-    Validate prices against oracle whitelist and adjust as needed.
+    Validate prices against oracle whitelist and set appropriate values.
 
     Args:
         prices: Dictionary of denom to price mappings
 
     Returns:
-        Adjusted prices dictionary with:
-        - Only denoms that exist in whitelist
-        - Zero prices for whitelisted denoms without prices
+        Adjusted prices dictionary that:
+        - Only includes denoms from whitelist
+        - Uses zero for any whitelisted denom without a valid price
+        - Rounds prices to appropriate decimal places
     """
     err_flag, whitelist = get_valid_denoms()
     if err_flag:
@@ -53,24 +54,36 @@ def validate_prices(prices: Dict[str, float]) -> Dict[str, float]:
 
     adjusted_prices = {}
     valid_denoms = [asset["name"] for asset in whitelist]
+    logger.debug(f"Validating prices against whitelist: {valid_denoms}")
 
-    # Set zero prices for all valid denoms first
+    # First, initialize all whitelisted denoms with zero prices
     for denom in valid_denoms:
         adjusted_prices[denom] = 0
 
-    # Update with actual prices where we have them
+    # Then update with actual prices where available and valid
     for denom, price in prices.items():
         if denom in valid_denoms:
-            adjusted_prices[denom] = round(price,12) #allows up to 18 - but will do 12
-            logger.debug(f"Price for {denom}: {price}")
+            if price is not None and price > 0:
+                adjusted_prices[denom] = round(price, 12)  # Round to 12 decimal places
+                logger.info(f"Valid price for {denom}: {adjusted_prices[denom]}")
+            else:
+                logger.warning(f"Invalid or zero price for {denom}, using 0")
+                adjusted_prices[denom] = 0
         else:
             logger.warning(f"Skipping {denom} as it's not in whitelist")
 
-    # Log final adjustments
+    # Log final price state
+    logger.info("Final validated prices:")
     for denom, price in adjusted_prices.items():
         if price == 0:
-            logger.info(f"Using zero price for {denom}")
+            logger.info(f"Zero price for {denom} (either missing or invalid)")
         else:
-            logger.info(f"Using provided price for {denom}: {price} MLD per {denom}")
+            logger.info(f"Price for {denom}: {price}")
+
+    # Verify we have at least one valid price
+    valid_prices = {k: v for k, v in adjusted_prices.items() if v > 0}
+    if not valid_prices:
+        logger.error("No valid prices after validation")
+        return {}
 
     return adjusted_prices

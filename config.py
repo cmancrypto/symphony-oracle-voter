@@ -136,12 +136,8 @@ METRIC_MARKET_PRICE = Gauge("symphony_oracle_market_price", "Last market price",
 METRIC_OUTBOUND_ERROR = Counter("terra_oracle_request_errors", "Outbound HTTP request error count", ["remote"])
 METRIC_OUTBOUND_LATENCY = Histogram("terra_oracle_request_latency", "Outbound HTTP request latency", ["remote"])
 
-
-#fx-symbol list to query fx rates for - USD not required
-#TODO- configure with Symphony actual symbol list
-fx_symbol_list= ["HKD","BTC","ETH","EUR","XAU","IDR"]
-
 default_base_fx = "uusd"
+default_base_fx_map="USD"
 
 # parameters
 fx_map = {
@@ -162,7 +158,7 @@ if chain_id == "testing":
         "uvnd": "INR",  ##this is so we can write USDINR to UVND, this should be removed before mainnet
     }
 
-
+fx_symbol_list = [symbol for symbol in set(fx_map.values()) if symbol != default_base_fx_map]
 
 # denoms for abstain votes. it will vote abstain for all denoms in this list.
 # this is deprecated for now

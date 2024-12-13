@@ -25,10 +25,9 @@ def get_prices():
     fx_err_flag, real_fx = combine_fx(res_fxs)
     osmosis_err_flag, osmosis_symphony_price = res_osmosis.result()
 
-    all_err_flag = fx_err_flag or osmosis_err_flag or swap_price_err_flag
-    if not all_err_flag:
+    # Only proceed if we have the Osmosis Symphony price
+    if not osmosis_err_flag and osmosis_symphony_price:
         prices = {}
-        # Get whitelist from oracle params for valid denoms
         params, err_flag = get_oracle_params()
         if err_flag:
             logger.error("Failed to get oracle parameters for whitelist")
@@ -40,88 +39,100 @@ def get_prices():
             return None
 
         logger.debug(f"Processing whitelisted assets: {[asset['name'] for asset in whitelist]}")
-        logger.debug(f"Available FX mappings: {fx_map}")
-        logger.debug(f"Available FX rates: {real_fx}")
 
-        missing_fx_maps = []
-        missing_fx_rates = []
-
+        # Process each whitelisted asset
         for asset in whitelist:
             denom = asset["name"]
+
+            # Handle base USD price
             if denom == default_base_fx:
                 market_price = 1 / float(osmosis_symphony_price)
-                logger.info(f"uusd{market_price}")
+                logger.info(f"{denom} price: {market_price}")
                 prices[denom] = market_price
                 METRIC_MARKET_PRICE.labels(denom).set(market_price)
                 continue
 
-            # Check if we have the necessary FX mapping
+            # Skip if no FX mapping
             if denom not in fx_map:
-                missing_fx_maps.append(denom)
+                logger.warning(f"No FX mapping for {denom}, will be set to 0 in validation")
                 continue
 
-            # Check if we have the FX rate for this asset
+            # Calculate price if we have valid FX rate
             fx_symbol = fx_map[denom]
-            if fx_symbol not in real_fx:  # Changed condition to not check for None
-                missing_fx_rates.append(denom)
-                continue
-
-            # If we have everything, calculate the price
-            market_price = 1/(float(osmosis_symphony_price) * real_fx[fx_map[denom]])
-            prices[denom] = market_price
-            METRIC_MARKET_PRICE.labels(denom).set(market_price)
-
-        # Log any missing configurations
-        if missing_fx_maps:
-            logger.warning(f"Missing FX mappings for whitelisted denoms: {missing_fx_maps}")
-        if missing_fx_rates:
-            logger.warning(f"Missing FX rates for denoms: {missing_fx_rates}")
+            if fx_symbol in real_fx and real_fx[fx_symbol] and real_fx[fx_symbol] > 0:
+                try:
+                    market_price = 1 / (float(osmosis_symphony_price) * real_fx[fx_map[denom]])
+                    prices[denom] = market_price
+                    METRIC_MARKET_PRICE.labels(denom).set(market_price)
+                    logger.info(f"Calculated price for {denom}: {market_price}")
+                except Exception as e:
+                    logger.error(f"Error calculating price for {denom}: {e}")
+            else:
+                logger.warning(f"Missing or invalid FX rate for {denom} ({fx_symbol}), will be set to 0 in validation")
 
         if not prices:
             logger.error("No valid prices could be calculated")
             return None
 
+        # Validate and adjust prices
         adjusted_prices = validate_prices(prices)
         if not adjusted_prices:
+            logger.error("No prices remained after validation")
             return None
 
         return adjusted_prices
     else:
+        if osmosis_err_flag:
+            logger.error("Failed to get Osmosis Symphony price")
         return None
 
 
 def combine_fx(res_fxs):
+    """Combines FX results from multiple sources, handling missing or invalid rates gracefully."""
     fx_combined = {fx: [] for fx in fx_map.values()}
-    all_fx_err_flag = True
+    all_success = False  # Changed from error flag to success flag
 
     for res_fx in res_fxs:
         err_flag, fx = res_fx.result()
-        all_fx_err_flag = all_fx_err_flag and err_flag
-        if not err_flag:
+        if not err_flag and fx:  # If this source succeeded
+            all_success = True  # Mark that we got at least one successful source
             for key in fx_combined:
-                if key in fx:
+                if key in fx and fx[key] is not None and fx[key] > 0:  # Additional validation
                     fx_combined[key].append(fx[key])
 
     result_fx = {}
     for key in fx_combined:
-        if fx_combined[key]:
-            result_fx[key] = statistics.median(fx_combined[key])
+        valid_rates = [rate for rate in fx_combined[key] if rate is not None and rate > 0]
+        if valid_rates:
+            result_fx[key] = statistics.median(valid_rates)
+            logger.debug(f"FX rate for {key}: {result_fx[key]} (from {len(valid_rates)} sources)")
         else:
-            logger.error(f"error in fx.map with key: {key}")
-            # Don't set None, just skip this currency
-            all_fx_err_flag = True
+            logger.warning(f"No valid FX rates found for {key}")
+            # Don't include invalid rates in the result
 
-    return all_fx_err_flag, result_fx
+    # Return error flag (True if we got no successful sources) and the results
+    return not all_success, result_fx
 
 def weighted_price(prices, weights):
     return sum(p * w for p, w in zip(prices, weights)) / sum(weights)
 
 
 def format_prices(prices) -> str:
+    """Formats prices into the required string format, handling missing or zero prices."""
     if not prices:
         return ""
 
     formatted_prices = []
     for denom, price in prices.items():
-        formatted_prices.append(f"{price}{denom}")
+        if price is not None and price > 0:  # Only include valid prices
+            # Round to 18 decimal places and remove trailing zeros
+            formatted_price = f"{price:.18f}".rstrip('0').rstrip('.')
+            formatted_prices.append(f"{formatted_price}{denom}")
+        else:
+            logger.warning(f"Skipping invalid price for {denom}: {price}")
+
+    if not formatted_prices:
+        logger.error("No valid prices to format")
+        return ""
+
     return ','.join(formatted_prices)
