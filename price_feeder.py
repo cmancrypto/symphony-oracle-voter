@@ -62,14 +62,19 @@ def get_prices():
 
             # Check if we have the FX rate for this asset
             fx_symbol = fx_map[denom]
-            if fx_symbol not in real_fx or real_fx[fx_symbol] is None:
+            if fx_symbol not in real_fx:
                 missing_fx_rates.append(denom)
+                logger.warning(f"Missing FX rate for {denom} (FX symbol: {fx_symbol})")
                 continue
 
             # If we have everything, calculate the price
-            market_price = 1/(float(osmosis_symphony_price) * real_fx[fx_map[denom]])
-            prices[denom] = market_price
-            METRIC_MARKET_PRICE.labels(denom).set(market_price)
+            try:
+                market_price = 1/(float(osmosis_symphony_price) * real_fx[fx_map[denom]])
+                prices[denom] = market_price
+                METRIC_MARKET_PRICE.labels(denom).set(market_price)
+            except (TypeError, ZeroDivisionError) as e:
+                logger.error(f"Error calculating price for {denom}: {str(e)}")
+                continue
 
         # Log any missing configurations
         if missing_fx_maps:
@@ -89,28 +94,32 @@ def get_prices():
     else:
         return None
 
+
 def combine_fx(res_fxs):
     fx_combined = {fx: [] for fx in fx_map.values()}
-    all_fx_err_flag = True
+    all_fx_err_flag = False  # Changed to False by default
 
     for res_fx in res_fxs:
-
         err_flag, fx = res_fx.result()
-        all_fx_err_flag = all_fx_err_flag and err_flag
-        if not err_flag:
-            for key in fx_combined:
-                if key in fx:
-                    fx_combined[key].append(fx[key])
 
-    for key in fx_combined:
-        if fx_combined[key]:
-            fx_combined[key] = statistics.median(fx_combined[key])
+        if not err_flag and fx:  # Only process if we have valid data
+            for key in fx_combined:
+                if key in fx and fx[key] is not None:
+                    fx_combined[key].append(fx[key])
         else:
-            logger.error(f"error in fx.map with key: {key}")
-            fx_combined[key] = None
             all_fx_err_flag = True
 
-    return all_fx_err_flag, fx_combined
+    # Process the combined FX rates
+    result_fx = {}
+    for key in fx_combined:
+        if fx_combined[key]:  # If we have any valid rates for this currency
+            result_fx[key] = statistics.median(fx_combined[key])
+        else:
+            logger.warning(f"No valid FX rates found for currency: {key}")
+            all_fx_err_flag = True
+            # Don't set to None, just skip this currency
+
+    return all_fx_err_flag, result_fx
 
 def weighted_price(prices, weights):
     return sum(p * w for p, w in zip(prices, weights)) / sum(weights)
