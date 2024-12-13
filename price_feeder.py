@@ -25,65 +25,91 @@ def get_prices():
     fx_err_flag, real_fx = combine_fx(res_fxs)
     osmosis_err_flag, osmosis_symphony_price = res_osmosis.result()
 
-    prices = {}
+    all_err_flag = fx_err_flag or osmosis_err_flag or swap_price_err_flag
+    if not all_err_flag:
+        prices = {}
+        # Get whitelist from oracle params for valid denoms
+        params, err_flag = get_oracle_params()
+        if err_flag:
+            logger.error("Failed to get oracle parameters for whitelist")
+            return None
 
-    # Get whitelist from oracle params for valid denoms
-    params, err_flag = get_oracle_params()
-    if err_flag:
-        logger.error("Failed to get oracle parameters for whitelist")
-        return {}
+        whitelist = params.get("whitelist", [])
+        if not whitelist:
+            logger.error("No whitelisted assets found in oracle parameters")
+            return None
 
-    whitelist = params.get("whitelist", [])
-    if not whitelist:
-        logger.error("No whitelisted assets found in oracle parameters")
-        return {}
+        logger.debug(f"Processing whitelisted assets: {[asset['name'] for asset in whitelist]}")
+        logger.debug(f"Available FX mappings: {fx_map}")
+        logger.debug(f"Available FX rates: {real_fx}")
 
-    logger.debug(f"Processing whitelisted assets: {[asset['name'] for asset in whitelist]}")
+        missing_fx_maps = []
+        missing_fx_rates = []
 
-    for asset in whitelist:
-        denom = asset["name"]
-        try:
+        for asset in whitelist:
+            denom = asset["name"]
             if denom == default_base_fx:
                 market_price = 1 / float(osmosis_symphony_price)
+                logger.info(f"uusd{market_price}")
                 prices[denom] = market_price
                 METRIC_MARKET_PRICE.labels(denom).set(market_price)
-            elif denom in fx_map and fx_map[denom] in real_fx:
-                market_price = 1 / (float(osmosis_symphony_price) * real_fx[fx_map[denom]])
-                prices[denom] = market_price
-                METRIC_MARKET_PRICE.labels(denom).set(market_price)
-            else:
-                logger.warning(f"Missing FX data for {denom}, will be handled by price validation")
+                continue
 
-        except (TypeError, ZeroDivisionError) as e:
-            logger.error(f"Error calculating price for {denom}: {str(e)}")
+            # Check if we have the necessary FX mapping
+            if denom not in fx_map:
+                missing_fx_maps.append(denom)
+                continue
 
-    # validate_prices will handle setting zeros for any missing prices
-    return validate_prices(prices)
+            # Check if we have the FX rate for this asset
+            fx_symbol = fx_map[denom]
+            if fx_symbol not in real_fx:  # Changed condition to not check for None
+                missing_fx_rates.append(denom)
+                continue
+
+            # If we have everything, calculate the price
+            market_price = 1/(float(osmosis_symphony_price) * real_fx[fx_map[denom]])
+            prices[denom] = market_price
+            METRIC_MARKET_PRICE.labels(denom).set(market_price)
+
+        # Log any missing configurations
+        if missing_fx_maps:
+            logger.warning(f"Missing FX mappings for whitelisted denoms: {missing_fx_maps}")
+        if missing_fx_rates:
+            logger.warning(f"Missing FX rates for denoms: {missing_fx_rates}")
+
+        if not prices:
+            logger.error("No valid prices could be calculated")
+            return None
+
+        adjusted_prices = validate_prices(prices)
+        if not adjusted_prices:
+            return None
+
+        return adjusted_prices
+    else:
+        return None
 
 
 def combine_fx(res_fxs):
     fx_combined = {fx: [] for fx in fx_map.values()}
-    all_fx_err_flag = False  # Changed to False by default
+    all_fx_err_flag = True
 
     for res_fx in res_fxs:
         err_flag, fx = res_fx.result()
-
-        if not err_flag and fx:  # Only process if we have valid data
+        all_fx_err_flag = all_fx_err_flag and err_flag
+        if not err_flag:
             for key in fx_combined:
-                if key in fx and fx[key] is not None:
+                if key in fx:
                     fx_combined[key].append(fx[key])
-        else:
-            all_fx_err_flag = True
 
-    # Process the combined FX rates
     result_fx = {}
     for key in fx_combined:
-        if fx_combined[key]:  # If we have any valid rates for this currency
+        if fx_combined[key]:
             result_fx[key] = statistics.median(fx_combined[key])
         else:
-            logger.warning(f"No valid FX rates found for currency: {key}")
+            logger.error(f"error in fx.map with key: {key}")
+            # Don't set None, just skip this currency
             all_fx_err_flag = True
-            # Don't set to None, just skip this currency
 
     return all_fx_err_flag, result_fx
 
