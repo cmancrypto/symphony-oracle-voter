@@ -14,7 +14,8 @@ This guide will walk you through the process of setting up the Symphony Oracle V
 - Python 3 - Python3.11 Recommended
 - Systemd (usually pre-installed on most Linux distributions)
 - Sudo privileges
-- Server running symphonyd with synced status 
+- Server running symphonyd with synced status
+- Node tx indexing on and set to kv or access to a LCD/node with indexing on 
 
 ### For Docker Installation
 - Docker installed on your system
