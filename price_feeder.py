@@ -124,7 +124,7 @@ def format_prices(prices) -> str:
 
     formatted_prices = []
     for denom, price in prices.items():
-        if price is not None and price > 0:  # Only include valid prices
+        if price is not None and price >= 0:  # Only include valid prices
             # Round to 18 decimal places and remove trailing zeros
             formatted_price = f"{price:.18f}".rstrip('0').rstrip('.')
             formatted_prices.append(f"{formatted_price}{denom}")
