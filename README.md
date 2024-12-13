@@ -39,7 +39,7 @@ This guide will walk you through the process of setting up the Symphony Oracle V
   - delete if not using feeder 
 - KEY_BACKEND - actual backend for either the feeder (if using) or the validator (if not using feeder)
 - KEY_PASSWORD - ONLY FOR OS BACKEND
-- SYMPHONY_LCD = http://localhost:1317 OR TO MATCH YOUR ACTUAL LCD PORT
+- SYMPHONY_LCD = http://localhost:1317 OR TO MATCH YOUR ACTUAL LCD PORT - use someone elses if you have indexing off 
 - TENDERMINT_RPC = tcp://localhost:26657 or your actual tendermint RPC address
 If desired, other parameters can be set - check config.py for full list - i.e gas prices, gas multiplier etc. 
 
