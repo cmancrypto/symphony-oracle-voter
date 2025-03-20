@@ -146,8 +146,7 @@ fx_map = {
     "ubtc":"BTC",
     "ueth":"ETH",
     "ueur" :"EUR",
-    "uxau": "XAU",
-    "uidr" : "IDR"
+    "uxau": "XAU"
 }
 
 ##custom config for testing chain - to be removed for mainnet.
