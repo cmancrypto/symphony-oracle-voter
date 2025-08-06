@@ -62,7 +62,7 @@ lcd_address = os.getenv("SYMPHONY_LCD", "http://localhost:1317")
 #symphony custom module name for endpoints i.e module_name/oracle/
 module_name = os.getenv("MODULE_NAME", "symphony")
 # symphony chain ID
-chain_id = os.getenv("CHAIN_ID", "symphony-testnet-4")
+chain_id = os.getenv("CHAIN_ID", "symphony-1")
 # set last update time
 last_height = 0
 # in tx_config - include all the flags that you need, don't include "from" as this is set in script
@@ -91,20 +91,32 @@ stop_oracle_trigger_exchange_diverge = float(os.getenv("STOP_ORACLE_EXCHANGE_DIV
 # vote negative price when bid-ask price is wider than bid_ask_spread_max
 bid_ask_spread_max = float(os.getenv("BID_ASK_SPREAD_MAX", "0.05"))
 
+if chain_id == "symphony-1":
+    osmosis_lcd = os.getenv("OSMOSIS_LCD", "https://lcd.osmosis.zone/")
+    osmosis_pool_id= os.getenv("OSMOSIS_POOL_ID", "3084")
+    osmosis_base_asset=os.getenv("OSMOSIS_BASE_ASSET", "ibc/41AD5D4AFA42104295D08E564ADC7B40FD9DAB4BCD3002ECFA8BDD1309B65F24")
+    osmosis_quote_asset=os.getenv("OSMOSIS_QUOTE_ASSET", "ibc/498A0751C798A0D9A389AA3691123DADA57DAA4FE165D5C75894505B876BA6E4")
+    osmosis_quote_asset_ticker="USDC"
 
+    fx_map = {
+        "uusd": "USD",
+        }
 
-
-#osmosis config
-#Osmosis LCD URL
-osmosis_lcd = os.getenv("OSMOSIS_LCD", "https://lcd.testnet.osmosis.zone/")
-#pool ID
-osmosis_pool_id= os.getenv("OSMOSIS_POOL_ID", "666")
-#Osmosis Base asset (Note/Symphony)
-osmosis_base_asset=os.getenv("OSMOSIS_BASE_ASSET", "ibc/C5B7196709BDFC3A312B06D7292892FA53F379CD3D556B65DB00E1531D471BBA")
-#Osmosis quote asset (uosmo)
-osmosis_quote_asset=os.getenv("OSMOSIS_QUOTE_ASSET", "uosmo")
-osmosis_quote_asset_ticker="OSMO"
-
+if chain_id == "symphony-testnet-4":
+    osmosis_lcd = os.getenv("OSMOSIS_LCD", "https://lcd.testnet.osmosis.zone/")
+    osmosis_pool_id= os.getenv("OSMOSIS_POOL_ID", "666")
+    osmosis_base_asset=os.getenv("OSMOSIS_BASE_ASSET", "ibc/C5B7196709BDFC3A312B06D7292892FA53F379CD3D556B65DB00E1531D471BBA")
+    osmosis_quote_asset=os.getenv("OSMOSIS_QUOTE_ASSET", "uosmo")
+    osmosis_quote_asset_ticker="OSMO"
+    # parameters
+    fx_map = {
+        "uusd": "USD",
+        "uhkd": "HKD",
+        "ubtc":"BTC",
+        "ueth":"ETH",
+        "ueur" :"EUR",
+        "uxau": "XAU"
+    }
 
 
 #band config
@@ -139,15 +151,7 @@ METRIC_OUTBOUND_LATENCY = Histogram("terra_oracle_request_latency", "Outbound HT
 default_base_fx = "uusd"
 default_base_fx_map="USD"
 
-# parameters
-fx_map = {
-    "uusd": "USD",
-    "uhkd": "HKD",
-    "ubtc":"BTC",
-    "ueth":"ETH",
-    "ueur" :"EUR",
-    "uxau": "XAU"
-}
+
 
 ##custom config for testing chain - to be removed for mainnet.
 if chain_id == "testing":
