@@ -19,7 +19,22 @@ This guide will walk you through the process of setting up the Symphony Oracle V
 
 ### For Docker Installation
 - Docker installed on your system
-- Server running symphonyd with synced status
+
+## Docker Installation
+1. **Copy the environment template:**
+   ```bash
+   cp .env_sample .env
+   ```
+
+2. **Edit the `.env` file with your actual values:**
+   ```bash
+   nano .env  # or your preferred editor
+   ```
+
+3. **Run with Docker Compose (Recommended):**
+   ```bash
+   docker-compose up -d
+   ```
 
 ## Traditional Installation Steps
 1. Clone the repository:
@@ -67,53 +82,6 @@ If desired, other parameters can be set - check config.py for full list - i.e ga
 9. Copy the service file to the systemd directory:
    ```
    sudo cp oracle.service /etc/systemd/system/
-   ```
-
-## Docker Installation
-1. Pull the Docker image:
-   ```bash
-   docker pull ghcr.io/pfc-developer/symphony-oracle-voter:latest
-   ```
-
-2. Create a `.env` file with your configuration:
-   ```env
-   VALIDATOR_ADDRESS=symphonyvaloperxxx
-   VALIDATOR_ACC_ADDRESS=symphonyxxx
-   FEEDER_ADDRESS=symphonyxxx
-   FEEDER_SEED="your seed phrase here"
-   SYMPHONY_LCD=http://localhost:1317
-   TENDERMINT_RPC=tcp://localhost:26657
-   ```
-
-3. Run the container:
-   ```bash
-   docker run -d \
-     --name symphony-oracle \
-     --env-file .env \
-     -p 19000:19000 \
-     ghcr.io/pfc-developer/symphony-oracle-voter:latest
-   ```
-
-
-### Building Docker Image Locally
-1. Clone and navigate to the repository:
-   ```bash
-   git clone https://github.com/cmancrypto/symphony-oracle-voter
-   cd symphony-oracle-voter
-   ```
-
-2. Build the image:
-   ```bash
-   docker build -t symphony-oracle-voter .
-   ```
-
-3. Run your local build:
-   ```bash
-   docker run -d \
-     --name symphony-oracle \
-     --env-file .env \
-     -p 19000:19000 \
-     symphony-oracle-voter
    ```
 
 ## Service Management (Traditional Installation)
