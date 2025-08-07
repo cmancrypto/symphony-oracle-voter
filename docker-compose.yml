@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  symphony-oracle:
+    build: .
+    container_name: symphony-oracle-voter
+    restart: unless-stopped
+    ports:
+      - "19000:19000"
+    env_file:
+      - .env
+    environment:
+      # Override specific Docker-only settings if needed
+      PYTHON_ENV: production
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      DEBUG: ${DEBUG:-false}
+    volumes:
+      # Optional: Mount for persistent data if needed
+      - ./data:/symphony/data
+      # Optional: Mount keyring for persistence across restarts
+      # Uncomment the line below if you want to persist the keyring
+      # - ./symphony_keyring:/root/.symphonyd
+    networks:
+      - symphony-network
+
+networks:
+  symphony-network:
+    driver: bridge 
