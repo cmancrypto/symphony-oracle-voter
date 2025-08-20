@@ -9,7 +9,7 @@ log() {
 # Validate required environment variables
 required_vars=(
     "VALIDATOR_ADDRESS"
-    "VALIDATOR_ACC_ADDRESS"
+    "VALIDATOR_VALOPER_ADDRESS"
     "SYMPHONY_LCD"
     "TENDERMINT_RPC"
     "CHAIN_ID"
@@ -43,8 +43,8 @@ if ! symphonyd status 2>/dev/null >/dev/null; then
 fi
 
 # Query oracle feeder (this helps validate the setup)
-log "Querying oracle feeder for validator: ${VALIDATOR_ADDRESS}"
-symphonyd query oracle feeder "${VALIDATOR_ADDRESS}" || {
+log "Querying oracle feeder for validator: ${VALIDATOR_VALOPER_ADDRESS}"
+symphonyd query oracle feeder "${VALIDATOR_VALOPER_ADDRESS}" || {
     log "WARNING: Could not query oracle feeder. This might be expected for initial setup."
 }
 
@@ -120,7 +120,7 @@ if [ -z "${FEEDER_ADDRESS}" ]; then
     for key_name in $(symphonyd keys list --output json 2>/dev/null | jq -r '.[].name' 2>/dev/null || echo ""); do
         if [ -n "$key_name" ]; then
             key_addr=$(symphonyd keys show "$key_name" --address 2>/dev/null)
-            if [ "$key_addr" = "${VALIDATOR_ACC_ADDRESS}" ]; then
+            if [ "$key_addr" = "${VALIDATOR_ADDRESS}" ]; then
                 validator_key_name="$key_name"
                 break
             fi
@@ -128,9 +128,9 @@ if [ -z "${FEEDER_ADDRESS}" ]; then
     done
     
     if [ -n "$validator_key_name" ]; then
-        log "✓ Validator account key found in keyring: $validator_key_name ($VALIDATOR_ACC_ADDRESS)"
+        log "✓ Validator account key found in keyring: $validator_key_name ($VALIDATOR_ADDRESS)"
     else
-        log "ERROR: Validator account key not found in keyring for address: ${VALIDATOR_ACC_ADDRESS}"
+        log "ERROR: Validator account key not found in keyring for address: ${VALIDATOR_ADDRESS}"
         log "Available keys in keyring:"
         symphonyd keys list 2>/dev/null || log "No keys found in keyring"
         exit 1
@@ -147,7 +147,7 @@ log "Creating application configuration..."
 cat > /symphony/.env << EOF
 # Generated configuration - do not edit manually
 VALIDATOR_ADDRESS=${VALIDATOR_ADDRESS}
-VALIDATOR_ACC_ADDRESS=${VALIDATOR_ACC_ADDRESS}
+VALIDATOR_VALOPER_ADDRESS=${VALIDATOR_VALOPER_ADDRESS}
 FEEDER_ADDRESS=${FEEDER_ADDRESS:-}
 KEY_BACKEND=${KEY_BACKEND:-test}
 KEY_PASSWORD=${KEY_PASSWORD:-}

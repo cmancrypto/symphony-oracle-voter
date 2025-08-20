@@ -47,8 +47,8 @@ This guide will walk you through the process of setting up the Symphony Oracle V
    git checkout v0.0.5r1
    ```
 3. Modify .env_sample to set the required configuration. The following parameters are key:
-- VALIDATOR_ADDRESS - symphonyvaloper prefix address
-- VALIDATOR_ACC_ADDRESS - symphony prefix notation for the validator address 
+- VALIDATOR_ADDRESS - symphony prefix address (symphony1... format)
+- VALIDATOR_VALOPER_ADDRESS - symphonyvaloper prefix address (symphonyvaloper1... format)
 - FEEDER_ADDRESS - if wanting to use a delegate feeder to send vote/prevote to not expose the main validator account 
   - from CLI $ symphonyd tx oracle set-feeder symphony1... where "symphony1..." is the address you want to delegate your voting rights to.
   - delete if not using feeder 

@@ -84,8 +84,8 @@ For production deployments with secrets management:
 ```bash
 docker run -d \
   --name symphony-oracle-voter \
-  -e VALIDATOR_ADDRESS=symphonyvaloper1... \
-  -e VALIDATOR_ACC_ADDRESS=symphony1... \
+  -e VALIDATOR_ADDRESS=symphony1... \
+  -e VALIDATOR_VALOPER_ADDRESS=symphonyvaloper1... \
   -e SYMPHONY_LCD=http://localhost:1317 \
   -e TENDERMINT_RPC=tcp://localhost:26657 \
   -e CHAIN_ID=symphony-1 \
@@ -99,8 +99,8 @@ docker run -d \
 
 These must be set in your `.env` file:
 
-- `VALIDATOR_ADDRESS`: Your validator address (symphonyvaloper1...)
-- `VALIDATOR_ACC_ADDRESS`: Your validator account address (symphony1...)
+- `VALIDATOR_ADDRESS`: Your validator account address (symphony1...)
+- `VALIDATOR_VALOPER_ADDRESS`: Your validator address (symphonyvaloper1...)
 - `SYMPHONY_LCD`: Symphony LCD endpoint
 - `TENDERMINT_RPC`: Tendermint RPC endpoint
 - `CHAIN_ID`: Chain ID (symphony-1 or symphony-testnet-4)
@@ -121,8 +121,8 @@ The enhanced entrypoint script supports multiple keyring scenarios:
 
 ```bash
 # In your .env file
-VALIDATOR_ADDRESS=symphonyvaloper1...
-VALIDATOR_ACC_ADDRESS=symphony1...
+VALIDATOR_ADDRESS=symphony1...
+VALIDATOR_VALOPER_ADDRESS=symphonyvaloper1...
 FEEDER_ADDRESS=symphony1feederaddress...
 FEEDER_SEED="your twelve or twenty-four word seed phrase here"
 KEY_BACKEND=test  # or 'os' for production
@@ -138,8 +138,8 @@ KEY_BACKEND=test  # or 'os' for production
 
 ```bash
 # In your .env file
-VALIDATOR_ADDRESS=symphonyvaloper1...
-VALIDATOR_ACC_ADDRESS=symphony1...
+VALIDATOR_ADDRESS=symphony1...
+VALIDATOR_VALOPER_ADDRESS=symphonyvaloper1...
 FEEDER_ADDRESS=symphony1feederaddress...
 # No FEEDER_SEED needed - key already in keyring
 ```
@@ -153,8 +153,8 @@ FEEDER_ADDRESS=symphony1feederaddress...
 
 ```bash
 # In your .env file
-VALIDATOR_ADDRESS=symphonyvaloper1...
-VALIDATOR_ACC_ADDRESS=symphony1...
+VALIDATOR_ADDRESS=symphony1...
+VALIDATOR_VALOPER_ADDRESS=symphonyvaloper1...
 # No FEEDER_ADDRESS or FEEDER_SEED
 ```
 
