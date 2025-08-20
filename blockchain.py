@@ -115,7 +115,7 @@ def wait_for_block():
 @time_request('lcd')
 def get_current_misses():
     try:
-        result = requests.get(f"{lcd_address}/{module_name}/oracle/v1beta1/validators/{validator}/miss",
+        result = requests.get(f"{lcd_address}/{module_name}/oracle/v1beta1/validators/{valoper}/miss",
                               timeout=http_timeout).json()
         misses = int(result["miss_counter"])
         return misses
@@ -128,7 +128,7 @@ def get_current_misses():
 @time_request('lcd')
 def get_my_current_prevote_hash():
     try:
-        result = requests.get(f"{lcd_address}/{module_name}/oracle/v1beta1/validators/{validator}/aggregate_prevote",
+        result = requests.get(f"{lcd_address}/{module_name}/oracle/v1beta1/validators/{valoper}/aggregate_prevote",
                               timeout=http_timeout).json()
         return result["aggregate_prevote"]["hash"]
     except Exception as e:

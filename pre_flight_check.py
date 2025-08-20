@@ -17,7 +17,7 @@ def check_account_balance() -> Tuple[bool, str]:
     """Check if the account has sufficient balance for operations."""
     try:
         # Determine which account to check
-        account_address = feeder if feeder else validator_account
+        account_address = feeder if feeder else validator
         if not account_address:
             return False, "No account address configured to check balance"
 
@@ -52,7 +52,7 @@ def test_transaction_indexing() -> Tuple[bool, str]:
     """Test transaction indexing by sending a small self-transfer."""
     try:
         # Determine which account to use
-        from_address = feeder if feeder else validator_account
+        from_address = feeder if feeder else validator
         if not from_address:
             return False, "No account address configured for test transaction"
 
@@ -157,11 +157,15 @@ def check_environment() -> Tuple[bool, str]:
 
 def check_address_format() -> Tuple[bool, str]:
     """Verify address formats for validator, validator account, and feeder."""
-    if not validator.startswith("symphonyvaloper1"):
-        return False, f"Invalid validator address format: {validator}. Must start with 'symphonyvaloper1'"
 
-    if validator_account and not validator_account.startswith("symphony1"):
-        return False, f"Invalid validator account format: {validator_account}. Must start with 'symphony1'"
+    if validator.startswith("symphonyvaloper1"):
+        return False, f"Invalid validator address format: {validator}. Must start with 'symphony1'"
+
+    if not validator.startswith("symphony1"):
+        return False, f"Invalid validator address format: {validator}. Must start with 'symphony1'"
+    
+    if not valoper.startswith("symphonyvaloper1"):
+        return False, f"Invalid validator valoper address format: {valoper}. Must start with 'symphonyvaloper1'"
 
     if feeder and not feeder.startswith("symphony1"):
         return False, f"Invalid feeder address format: {feeder}. Must start with 'symphony1'"
@@ -321,8 +325,11 @@ def check_validator_config() -> Tuple[bool, str]:
     """Verify validator/feeder configuration."""
     if not validator:
         return False, "Validator address not configured"
+    
+    if not valoper:
+        return False, "Validator valoper address not configured"
 
-    if not (feeder or validator_account):
+    if not (feeder or validator):
         return False, "Neither feeder nor validator account address configured"
 
     if keyring_back_end == "os" and not key_password:

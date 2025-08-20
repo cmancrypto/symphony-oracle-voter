@@ -50,8 +50,8 @@ def process_votes(prices, last_price, last_salt, last_hash, epoch):
     # determine which args will be needed
     if feeder:
         from_account = feeder
-    elif validator_account:
-        from_account = validator_account
+    elif validator:
+        from_account = validator
     else:
         logger.error("Configure feeder or validator_acc for submitting tx")
 

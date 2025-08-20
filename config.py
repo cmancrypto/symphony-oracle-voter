@@ -38,10 +38,10 @@ Validator Configuration
 # oracle feeder address - only if using - this is a symphony1... format address
 #needs to be set first if using via delegate_feeder, do not set if not using
 feeder = os.getenv("FEEDER_ADDRESS", "")
-# validator address - symphonyvaloper1... format
+# validator address - symphony1... format - not symphonyvaloper format 
 validator = os.getenv("VALIDATOR_ADDRESS", "")
 #validator_account_address this is the validators symphony1... format address
-validator_account= os.getenv("VALIDATOR_ACC_ADDRESS")
+valoper= os.getenv("VALIDATOR_VALOPER_ADDRESS")
 key_password = os.getenv("KEY_PASSWORD", "") #if using OS Backend this is the password for the key
 """
 TX configuration
