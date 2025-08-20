@@ -100,6 +100,10 @@ if chain_id == "symphony-1":
 
     fx_map = {
         "uusd": "USD",
+        "urub": "RUB",
+        "uinr": "INR",
+        "ucny": "CNY",
+        "uxau": "XAU",
         }
 
 if chain_id == "symphony-testnet-4":
