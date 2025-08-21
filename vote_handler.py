@@ -40,7 +40,7 @@ def process_votes(prices, last_price, last_salt, last_hash, epoch):
     this_price = prices
     this_salt = get_salt(str(time.time()))
     # create hash to match what will be submitted in prevote
-    this_hash = get_aggregate_vote_hash(this_salt, this_price, validator)
+    this_hash = get_aggregate_vote_hash(this_salt, this_price, valoper)
 
     logger.info(f"Start voting on epoch {epoch + 1}")
 

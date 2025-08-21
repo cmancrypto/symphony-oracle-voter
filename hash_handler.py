@@ -19,7 +19,7 @@ def get_aggregate_vote_hash(salt: str, exchange_rates_str: str, validator: str) 
 # Example usage:
 salt = "1234"
 exchange_rates_str = "8888.0ukrw,1.243uusd,0.99usdr"
-voter = "symphonyvaloper1..."  # Replace with actual validator address
+voter = "symphonyvaloper1..."  # Replace with actual validator operator address
 
 hash_result = get_aggregate_vote_hash(salt, exchange_rates_str, voter)
 
