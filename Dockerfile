@@ -1,6 +1,6 @@
 ARG BUILDPLATFORM="linux/amd64"
 
-FROM ghcr.io/orchestra-labs/symphony:main AS symphony
+FROM ghcr.io/orchestra-labs/symphony:latest AS symphony
 FROM --platform=${BUILDPLATFORM} python:3-bookworm
 LABEL org.opencontainers.image.description="Symphony blockchain price feeder"
 LABEL org.opencontainers.image.source=https://github.com/cmancrypto/symphony-oracle-voter
