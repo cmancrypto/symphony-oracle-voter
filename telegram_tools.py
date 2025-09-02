@@ -4,7 +4,7 @@ from alerts import telegram
 def get_chat_id():
     TOKEN = telegram_token
     url = f"https://api.telegram.org/bot{TOKEN}/getUpdates"
-    result=requests.get(url).json()
+    result=requests.get(url, timeout=alert_http_timeout).json()
     chat_id= result["result"][0]["message"]["chat"]["id"]
     print(chat_id)
 

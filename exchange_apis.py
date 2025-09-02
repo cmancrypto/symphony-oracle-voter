@@ -101,7 +101,7 @@ def get_band_standard_dataset(symbols : list):
         }
         # Fetch the latest request ID for the standard dataset
         url = f"{base_url}/request_prices?{urlencode(params, doseq=True)}"
-        response = requests.get(url)
+        response = requests.get(url, timeout=http_timeout)
         response.raise_for_status()  # Raise an exception for bad status codes
 
         data = response.json()
@@ -187,7 +187,7 @@ def get_osmosis_symphony_price():
     try:
         url_extension=f"/osmosis/gamm/v1beta1/pools/{osmosis_pool_id}/prices?base_asset_denom={osmosis_base_asset}&quote_asset_denom={osmosis_quote_asset}"
         url=osmosis_lcd+url_extension
-        response = requests.get(url)
+        response = requests.get(url, timeout=http_timeout)
         response.raise_for_status()  # Raise an exception for bad status codes
         data = response.json()
         quote_asset_per = data["spot_price"] #this is a price in uOsmo or quote asset - i.e x uOsmo/note or Osmo/MLD

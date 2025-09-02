@@ -5,6 +5,8 @@ FROM --platform=${BUILDPLATFORM} python:3-bookworm
 LABEL org.opencontainers.image.description="Symphony blockchain price feeder"
 LABEL org.opencontainers.image.source=https://github.com/cmancrypto/symphony-oracle-voter
 
+# Install system dependencies including curl for health checks
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /symphony
 COPY --from=symphony /bin/symphonyd /usr/local/bin

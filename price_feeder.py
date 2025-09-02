@@ -21,9 +21,14 @@ def get_prices():
                 res_fxs.append(executor.submit(get_fx_rate_from_band))
         res_osmosis = executor.submit(get_osmosis_symphony_price)
 
-    swap_price_err_flag, swap_price = res_swap.result()
-    fx_err_flag, real_fx = combine_fx(res_fxs)
-    osmosis_err_flag, osmosis_symphony_price = res_osmosis.result()
+    # Add timeout protection to prevent hanging on external API calls
+    try:
+        swap_price_err_flag, swap_price = res_swap.result(timeout=15)
+        fx_err_flag, real_fx = combine_fx(res_fxs, timeout=15)
+        osmosis_err_flag, osmosis_symphony_price = res_osmosis.result(timeout=15)
+    except concurrent.futures.TimeoutError:
+        logger.error("Price fetching timed out after 15 seconds - skipping this epoch")
+        return None
 
     # Only proceed if we have the Osmosis Symphony price
     if not osmosis_err_flag and osmosis_symphony_price:
@@ -87,13 +92,24 @@ def get_prices():
         return None
 
 
-def combine_fx(res_fxs):
+def combine_fx(res_fxs, timeout=None):
     """Combines FX results from multiple sources, handling missing or invalid rates gracefully."""
     fx_combined = {fx: [] for fx in fx_map.values()}
     all_success = False  # Changed from error flag to success flag
 
     for res_fx in res_fxs:
-        err_flag, fx = res_fx.result()
+        try:
+            if timeout:
+                err_flag, fx = res_fx.result(timeout=timeout)
+            else:
+                err_flag, fx = res_fx.result()
+        except concurrent.futures.TimeoutError:
+            logger.error(f"FX API call timed out after {timeout} seconds")
+            continue  # Skip this source and try others
+        except Exception as e:
+            logger.error(f"Error getting FX result: {e}")
+            continue  # Skip this source and try others
+            
         if not err_flag and fx:  # If this source succeeded
             all_success = True  # Mark that we got at least one successful source
             for key in fx_combined:

@@ -149,7 +149,13 @@ def run_symphonyd_command(command: List[str]) -> dict:
             stderr=subprocess.PIPE,
             text=True
         )
-        stdout, stderr = process.communicate(input=f"{key_password}\n")
+        try:
+            stdout, stderr = process.communicate(input=f"{key_password}\n", timeout=30)
+        except subprocess.TimeoutExpired:
+            process.kill()
+            stdout, stderr = process.communicate()
+            logger.error(f"Command timed out after 30 seconds: {' '.join(command)}")
+            return {"error": "Command timed out after 30 seconds", "returncode": -1}
 
         # Log gas estimate as info if present
         if "gas estimate:" in stderr:

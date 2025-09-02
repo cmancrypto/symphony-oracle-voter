@@ -6,7 +6,7 @@ services:
     container_name: symphony-oracle-voter
     restart: unless-stopped
     ports:
-      - "19000:19000"
+      - "19000:19000"  # Prometheus metrics endpoint
     env_file:
       - .env
     environment:
@@ -22,6 +22,12 @@ services:
       # - ./symphony_keyring:/root/.symphonyd
     networks:
       - symphony-network
+    healthcheck:
+      test: ["CMD", "sh", "-c", "curl -f http://localhost:19000/metrics >/dev/null 2>&1 && symphonyd status >/dev/null 2>&1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
 networks:
   symphony-network:
