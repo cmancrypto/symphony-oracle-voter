@@ -95,6 +95,16 @@ docker run -d \
 
 ## Configuration
 
+### Keyring Backend Selection for Docker
+
+**Important**: Choose the right keyring backend for your deployment:
+
+- **`test`**: Development/testing only. Keys stored unencrypted in memory.
+- **`file`**: **Recommended for Docker production**. Keys encrypted on disk with password.
+- **`os`**: Bare metal production only. Requires OS credential services (not available in Docker).
+
+**For Docker deployments, use `file` backend instead of `os` backend.**
+
 ### Required Variables
 
 These must be set in your `.env` file:
@@ -110,7 +120,7 @@ These must be set in your `.env` file:
 - `FEEDER_ADDRESS`: If using a separate feeder account
 - `FEEDER_SEED`: Seed phrase for the feeder account (cleared after setup)
 - `TELEGRAM_TOKEN` & `TELEGRAM_CHAT_ID`: For notifications
-- `KEY_BACKEND`: "test" for development, "os" for production
+- `KEY_BACKEND`: "test" or "file" for docker
 - `LOG_LEVEL`: DEBUG, INFO, WARNING, ERROR
 
 ## Keyring Configuration Scenarios
@@ -125,7 +135,8 @@ VALIDATOR_ADDRESS=symphony1...
 VALIDATOR_VALOPER_ADDRESS=symphonyvaloper1...
 FEEDER_ADDRESS=symphony1feederaddress...
 FEEDER_SEED="your twelve or twenty-four word seed phrase here"
-KEY_BACKEND=test  # or 'os' for production
+KEY_BACKEND=file  # 'file' for production Docker, 'test' for development
+KEY_PASSWORD=your_secure_keyring_password  # Required for 'file' backend
 ```
 
 **What happens:**
@@ -276,7 +287,7 @@ If you're migrating from the old setup:
 
 For production:
 
-1. Use `KEY_BACKEND=os` instead of `test`
+1. Use `KEY_BACKEND=file` for Docker deployment (or `os` for bare metal)
 2. Set appropriate `KEY_PASSWORD`
 3. Use proper secrets management (Docker secrets, Kubernetes secrets, etc.)
 4. Monitor logs and set up proper alerting

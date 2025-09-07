@@ -43,8 +43,8 @@ if ! symphonyd status 2>/dev/null >/dev/null; then
 fi
 
 # Query oracle feeder (this helps validate the setup)
-log "Querying oracle feeder for validator: ${VALIDATOR_VALOPER_ADDRESS}"
-symphonyd query oracle feeder "${VALIDATOR_VALOPER_ADDRESS}" || {
+log "Querying oracle feeder for validator: ${VALIDATOR_ADDRESS}"
+symphonyd query oracle feeder "${VALIDATOR_ADDRESS}" || {
     log "WARNING: Could not query oracle feeder. This might be expected for initial setup."
 }
 
@@ -54,18 +54,31 @@ log "Setting up keyring and keys..."
 # Function to check if a key exists in the keyring
 key_exists() {
     local key_name="$1"
-    symphonyd keys show "$key_name" --address --keyring-backend "${KEY_BACKEND:-test}" 2>/dev/null >/dev/null
-    return $?
+    
+    if [ "${KEY_BACKEND:-test}" = "file" ] && [ -n "${KEY_PASSWORD}" ]; then
+        # For file backend, provide password to check if key exists
+        echo "${KEY_PASSWORD}" | symphonyd keys show "$key_name" --address --keyring-backend "${KEY_BACKEND:-test}" 2>/dev/null >/dev/null
+        return $?
+    else
+        # For test and other backends, no password needed
+        symphonyd keys show "$key_name" --address --keyring-backend "${KEY_BACKEND:-test}" 2>/dev/null >/dev/null
+        return $?
+    fi
 }
 
 # Set up feeder key if FEEDER_SEED is provided
 if [ -n "${FEEDER_SEED}" ]; then
     log "Setting up feeder key from seed..."
+    log "Using keyring backend: ${KEY_BACKEND:-test}"
     
     # Check if feeder key already exists
     if key_exists "feeder"; then
         log "Feeder key already exists in keyring, checking address..."
-        existing_address=$(symphonyd keys show feeder --address --keyring-backend "${KEY_BACKEND:-test}" 2>/dev/null)
+        if [ "${KEY_BACKEND:-test}" = "file" ] && [ -n "${KEY_PASSWORD}" ]; then
+            existing_address=$(echo "${KEY_PASSWORD}" | symphonyd keys show feeder --address --keyring-backend "${KEY_BACKEND:-test}" 2>/dev/null)
+        else
+            existing_address=$(symphonyd keys show feeder --address --keyring-backend "${KEY_BACKEND:-test}" 2>/dev/null)
+        fi
         if [ "$existing_address" = "${FEEDER_ADDRESS}" ]; then
             log "Existing feeder key matches expected address: $existing_address"
         else
@@ -78,10 +91,45 @@ if [ -n "${FEEDER_SEED}" ]; then
     # Add feeder key if it doesn't exist or was removed
     if ! key_exists "feeder"; then
         log "Adding feeder key to keyring..."
-        echo "${FEEDER_SEED}" | symphonyd keys add --recover feeder --keyring-backend "${KEY_BACKEND:-test}"
+        
+        # Handle different keyring backends
+        if [ "${KEY_BACKEND:-test}" = "file" ] && [ -n "${KEY_PASSWORD}" ]; then
+            # For file backend with password, send seed first, then password twice
+            log "Using file keyring backend with password..."
+            log "Sending: seed phrase, then password twice for keyring encryption"
+            printf "%s\n%s\n%s\n" "${FEEDER_SEED}" "${KEY_PASSWORD}" "${KEY_PASSWORD}" | symphonyd keys add --recover feeder --keyring-backend "${KEY_BACKEND:-test}"
+        elif [ "${KEY_BACKEND:-test}" = "file" ]; then
+            # For file backend without password, prompt for password
+            log "Using file keyring backend - will prompt for keyring password..."
+            log "NOTE: You'll need to enter the same password twice to create the keyring"
+            echo "${FEEDER_SEED}" | symphonyd keys add --recover feeder --keyring-backend "${KEY_BACKEND:-test}"
+        elif [ "${KEY_BACKEND:-test}" = "os" ] && [ -n "${KEY_PASSWORD}" ]; then
+            # For OS backend with password, send both seed and password
+            log "WARNING: OS keyring backend has limited Docker compatibility"
+            log "Using OS keyring backend with password..."
+            (echo "${FEEDER_SEED}"; echo "${KEY_PASSWORD}"; echo "${KEY_PASSWORD}") | symphonyd keys add --recover feeder --keyring-backend "${KEY_BACKEND:-test}" 2>/dev/null || {
+                log "Failed to add key with password. OS backend likely not available in Docker."
+                log "Please use KEY_BACKEND=file for Docker deployment"
+                exit 1
+            }
+        elif [ "${KEY_BACKEND:-test}" = "os" ]; then
+            # For OS backend without password, this will likely fail in Docker
+            log "ERROR: OS keyring backend is not recommended for Docker containers"
+            log "OS backend requires system credential services that are not available in Docker"
+            log "Please use KEY_BACKEND=file for Docker deployment (provides similar security)"
+            log "Or use KEY_BACKEND=test for development/testing"
+            exit 1
+        else
+            # For test backend, just send the seed
+            echo "${FEEDER_SEED}" | symphonyd keys add --recover feeder --keyring-backend "${KEY_BACKEND:-test}"
+        fi
         
         # Verify the key was added correctly
-        feeder_addr=$(symphonyd keys show feeder --address --keyring-backend "${KEY_BACKEND:-test}" 2>/dev/null)
+        if [ "${KEY_BACKEND:-test}" = "file" ] && [ -n "${KEY_PASSWORD}" ]; then
+            feeder_addr=$(echo "${KEY_PASSWORD}" | symphonyd keys show feeder --address --keyring-backend "${KEY_BACKEND:-test}" 2>/dev/null)
+        else
+            feeder_addr=$(symphonyd keys show feeder --address --keyring-backend "${KEY_BACKEND:-test}" 2>/dev/null)
+        fi
         if [ "$feeder_addr" = "${FEEDER_ADDRESS}" ]; then
             log "✓ Feeder key successfully added to keyring: $feeder_addr"
         else
@@ -96,7 +144,11 @@ if [ -n "${FEEDER_SEED}" ]; then
 elif [ -n "${FEEDER_ADDRESS}" ]; then
     log "FEEDER_ADDRESS provided but no FEEDER_SEED - checking if feeder key exists in keyring..."
     if key_exists "feeder"; then
-        feeder_addr=$(symphonyd keys show feeder --address --keyring-backend "${KEY_BACKEND:-test}" 2>/dev/null)
+        if [ "${KEY_BACKEND:-test}" = "file" ] && [ -n "${KEY_PASSWORD}" ]; then
+            feeder_addr=$(echo "${KEY_PASSWORD}" | symphonyd keys show feeder --address --keyring-backend "${KEY_BACKEND:-test}" 2>/dev/null)
+        else
+            feeder_addr=$(symphonyd keys show feeder --address --keyring-backend "${KEY_BACKEND:-test}" 2>/dev/null)
+        fi
         if [ "$feeder_addr" = "${FEEDER_ADDRESS}" ]; then
             log "✓ Feeder key found in keyring: $feeder_addr"
         else
