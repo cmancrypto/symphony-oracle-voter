@@ -50,7 +50,7 @@ fee_denom = os.getenv("FEE_DENOM", "note")
 fee_gas = os.getenv("FEE_GAS", "0.0025note")
 gas_adjustment = os.getenv("GAS_ADJUSTMENT","2")
 fee_amount = os.getenv("FEE_AMOUNT", "500000")
-keyring_back_end = os.getenv("KEY_BACKEND","os")
+keyring_back_end = os.getenv("KEY_BACKEND","test")
 symphonyd_path = os.getenv('SYMPHONYD_PATH', 'symphonyd') #ensure symphonyd properly on PATH
 rpc_node =  os.getenv("TENDERMINT_RPC", "tcp://localhost:26657") # this is what port you run your node tendermint RPC on
 

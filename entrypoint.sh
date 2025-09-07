@@ -54,7 +54,7 @@ log "Setting up keyring and keys..."
 # Function to check if a key exists in the keyring
 key_exists() {
     local key_name="$1"
-    symphonyd keys show "$key_name" --address 2>/dev/null >/dev/null
+    symphonyd keys show "$key_name" --address --keyring-backend "${KEY_BACKEND:-test}" 2>/dev/null >/dev/null
     return $?
 }
 
@@ -65,13 +65,13 @@ if [ -n "${FEEDER_SEED}" ]; then
     # Check if feeder key already exists
     if key_exists "feeder"; then
         log "Feeder key already exists in keyring, checking address..."
-        existing_address=$(symphonyd keys show feeder --address 2>/dev/null)
+        existing_address=$(symphonyd keys show feeder --address --keyring-backend "${KEY_BACKEND:-test}" 2>/dev/null)
         if [ "$existing_address" = "${FEEDER_ADDRESS}" ]; then
             log "Existing feeder key matches expected address: $existing_address"
         else
             log "WARNING: Existing feeder key address ($existing_address) doesn't match expected (${FEEDER_ADDRESS})"
             log "Removing existing key and re-adding..."
-            symphonyd keys delete feeder --yes 2>/dev/null || true
+            symphonyd keys delete feeder --yes --keyring-backend "${KEY_BACKEND:-test}" 2>/dev/null || true
         fi
     fi
     
@@ -81,7 +81,7 @@ if [ -n "${FEEDER_SEED}" ]; then
         echo "${FEEDER_SEED}" | symphonyd keys add --recover feeder --keyring-backend "${KEY_BACKEND:-test}"
         
         # Verify the key was added correctly
-        feeder_addr=$(symphonyd keys show feeder --address 2>/dev/null)
+        feeder_addr=$(symphonyd keys show feeder --address --keyring-backend "${KEY_BACKEND:-test}" 2>/dev/null)
         if [ "$feeder_addr" = "${FEEDER_ADDRESS}" ]; then
             log "✓ Feeder key successfully added to keyring: $feeder_addr"
         else
@@ -96,7 +96,7 @@ if [ -n "${FEEDER_SEED}" ]; then
 elif [ -n "${FEEDER_ADDRESS}" ]; then
     log "FEEDER_ADDRESS provided but no FEEDER_SEED - checking if feeder key exists in keyring..."
     if key_exists "feeder"; then
-        feeder_addr=$(symphonyd keys show feeder --address 2>/dev/null)
+        feeder_addr=$(symphonyd keys show feeder --address --keyring-backend "${KEY_BACKEND:-test}" 2>/dev/null)
         if [ "$feeder_addr" = "${FEEDER_ADDRESS}" ]; then
             log "✓ Feeder key found in keyring: $feeder_addr"
         else
@@ -117,9 +117,9 @@ if [ -z "${FEEDER_ADDRESS}" ]; then
     
     # Try to find validator key by address
     validator_key_name=""
-    for key_name in $(symphonyd keys list --output json 2>/dev/null | jq -r '.[].name' 2>/dev/null || echo ""); do
+    for key_name in $(symphonyd keys list --output json --keyring-backend "${KEY_BACKEND:-test}" 2>/dev/null | jq -r '.[].name' 2>/dev/null || echo ""); do
         if [ -n "$key_name" ]; then
-            key_addr=$(symphonyd keys show "$key_name" --address 2>/dev/null)
+            key_addr=$(symphonyd keys show "$key_name" --address --keyring-backend "${KEY_BACKEND:-test}" 2>/dev/null)
             if [ "$key_addr" = "${VALIDATOR_ADDRESS}" ]; then
                 validator_key_name="$key_name"
                 break
@@ -132,14 +132,14 @@ if [ -z "${FEEDER_ADDRESS}" ]; then
     else
         log "ERROR: Validator account key not found in keyring for address: ${VALIDATOR_ADDRESS}"
         log "Available keys in keyring:"
-        symphonyd keys list 2>/dev/null || log "No keys found in keyring"
+        symphonyd keys list --keyring-backend "${KEY_BACKEND:-test}" 2>/dev/null || log "No keys found in keyring"
         exit 1
     fi
 fi
 
 # List all keys in keyring for verification
 log "Keys currently in keyring:"
-symphonyd keys list 2>/dev/null || log "No keys found in keyring"
+symphonyd keys list --keyring-backend "${KEY_BACKEND:-test}" 2>/dev/null || log "No keys found in keyring"
 
 # Create a minimal .env file for the Python application with only necessary variables
 # This is more secure than dumping all environment variables
