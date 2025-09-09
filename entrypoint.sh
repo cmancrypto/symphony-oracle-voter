@@ -169,29 +169,49 @@ if [ -z "${FEEDER_ADDRESS}" ]; then
     
     # Try to find validator key by address
     validator_key_name=""
-    for key_name in $(symphonyd keys list --output json --keyring-backend "${KEY_BACKEND:-test}" 2>/dev/null | jq -r '.[].name' 2>/dev/null || echo ""); do
-        if [ -n "$key_name" ]; then
-            key_addr=$(symphonyd keys show "$key_name" --address --keyring-backend "${KEY_BACKEND:-test}" 2>/dev/null)
-            if [ "$key_addr" = "${VALIDATOR_ADDRESS}" ]; then
-                validator_key_name="$key_name"
-                break
+    if [ "${KEY_BACKEND:-test}" = "file" ] && [ -n "${KEY_PASSWORD}" ]; then
+        for key_name in $(echo ${KEY_PASSWORD} | symphonyd keys list --output json --keyring-backend "${KEY_BACKEND:-test}" 2>/dev/null | jq -r '.[].name' 2>/dev/null || echo ""); do
+            if [ -n "$key_name" ]; then
+                key_addr=$(echo ${KEY_PASSWORD} | symphonyd keys show "$key_name" --address --keyring-backend "${KEY_BACKEND:-test}" 2>/dev/null)
+                if [ "$key_addr" = "${VALIDATOR_ADDRESS}" ]; then
+                    validator_key_name="$key_name"
+                    break
+                fi
             fi
-        fi
-    done
+        done
+    else
+        for key_name in $(symphonyd keys list --output json --keyring-backend "${KEY_BACKEND:-test}" 2>/dev/null | jq -r '.[].name' 2>/dev/null || echo ""); do
+            if [ -n "$key_name" ]; then
+                key_addr=$(symphonyd keys show "$key_name" --address --keyring-backend "${KEY_BACKEND:-test}" 2>/dev/null)
+                if [ "$key_addr" = "${VALIDATOR_ADDRESS}" ]; then
+                    validator_key_name="$key_name"
+                    break
+                fi
+            fi
+        done
+    fi
     
     if [ -n "$validator_key_name" ]; then
         log "✓ Validator account key found in keyring: $validator_key_name ($VALIDATOR_ADDRESS)"
     else
         log "ERROR: Validator account key not found in keyring for address: ${VALIDATOR_ADDRESS}"
         log "Available keys in keyring:"
-        symphonyd keys list --keyring-backend "${KEY_BACKEND:-test}" 2>/dev/null || log "No keys found in keyring"
+        if [ "${KEY_BACKEND:-test}" = "file" ] && [ -n "${KEY_PASSWORD}" ]; then
+            echo ${KEY_PASSWORD} | symphonyd keys list --keyring-backend "${KEY_BACKEND:-test}" 2>/dev/null || log "No keys found in keyring"
+        else
+            symphonyd keys list --keyring-backend "${KEY_BACKEND:-test}" 2>/dev/null || log "No keys found in keyring"
+        fi
         exit 1
     fi
 fi
 
 # List all keys in keyring for verification
 log "Keys currently in keyring:"
-symphonyd keys list --keyring-backend "${KEY_BACKEND:-test}" 2>/dev/null || log "No keys found in keyring"
+if [ "${KEY_BACKEND:-test}" = "file" ] && [ -n "${KEY_PASSWORD}" ]; then
+    echo ${KEY_PASSWORD} | symphonyd keys list --keyring-backend "${KEY_BACKEND:-test}" 2>/dev/null || log "No keys found in keyring"
+else
+    symphonyd keys list --keyring-backend "${KEY_BACKEND:-test}" 2>/dev/null || log "No keys found in keyring"
+fi
 
 # Create a minimal .env file for the Python application with only necessary variables
 # This is more secure than dumping all environment variables
