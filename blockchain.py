@@ -11,13 +11,57 @@ logger = logging.getLogger(__name__)
 @time_request('lcd')
 def get_oracle_params():
     err_flag = False
+    url = f"{lcd_address}/{module_name}/oracle/v1beta1/params"
     try:
-        result = requests.get(f"{lcd_address}/{module_name}/oracle/v1beta1/params", timeout=http_timeout).json()
+        logger.debug(f"Requesting oracle params from: {url}")
+        response = requests.get(url, timeout=http_timeout)
+        
+        # Check if the response is successful
+        if response.status_code != 200:
+            logger.error(f"HTTP error {response.status_code} when getting oracle params from {url}")
+            logger.error(f"Response content: {response.text[:500]}...")  # Log first 500 chars
+            err_flag = True
+            return {}, err_flag
+        
+        # Check if response has content
+        if not response.text.strip():
+            logger.error(f"Empty response when getting oracle params from {url}")
+            err_flag = True
+            return {}, err_flag
+        
+        # Try to parse JSON
+        try:
+            result = response.json()
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse JSON response from {url}: {e}")
+            logger.error(f"Response content: {response.text[:500]}...")  # Log first 500 chars
+            err_flag = True
+            return {}, err_flag
+        
+        # Check if the expected structure exists
+        if "params" not in result:
+            logger.error(f"Missing 'params' key in response from {url}")
+            logger.error(f"Response structure: {list(result.keys()) if isinstance(result, dict) else type(result)}")
+            err_flag = True
+            return {}, err_flag
+            
         params = result["params"]
+        logger.debug(f"Successfully retrieved oracle params: {params}")
         return params, err_flag
-    except:
+        
+    except requests.exceptions.Timeout:
         METRIC_OUTBOUND_ERROR.labels('lcd').inc()
-        logger.exception("Error in get_oracle_params")
+        logger.error(f"Timeout when requesting oracle params from {url} (timeout: {http_timeout}s)")
+        err_flag = True
+        return {}, err_flag
+    except requests.exceptions.ConnectionError:
+        METRIC_OUTBOUND_ERROR.labels('lcd').inc()
+        logger.error(f"Connection error when requesting oracle params from {url}")
+        err_flag = True
+        return {}, err_flag
+    except Exception as e:
+        METRIC_OUTBOUND_ERROR.labels('lcd').inc()
+        logger.exception(f"Unexpected error in get_oracle_params when requesting {url}: {e}")
         err_flag = True
         return {}, err_flag
 
@@ -25,14 +69,51 @@ def get_oracle_params():
 @time_request('lcd')
 def get_latest_block():
     err_flag = False
+    url = f"{lcd_address}/cosmos/base/tendermint/v1beta1/blocks/latest"
     try:
         session = requests.session()
-        result = session.get(f"{lcd_address}/cosmos/base/tendermint/v1beta1/blocks/latest", timeout=http_timeout).json()
+        response = session.get(url, timeout=http_timeout)
+        
+        # Check if the response is successful
+        if response.status_code != 200:
+            logger.error(f"HTTP error {response.status_code} when getting latest block from {url}")
+            logger.error(f"Response content: {response.text[:500]}...")
+            err_flag = True
+            return err_flag, None, None
+        
+        # Check if response has content
+        if not response.text.strip():
+            logger.error(f"Empty response when getting latest block from {url}")
+            err_flag = True
+            return err_flag, None, None
+        
+        # Try to parse JSON
+        try:
+            result = response.json()
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse JSON response from {url}: {e}")
+            logger.error(f"Response content: {response.text[:500]}...")
+            err_flag = True
+            return err_flag, None, None
+        
         latest_block_height = int(result["block"]["header"]["height"])
         latest_block_time = result["block"]["header"]["time"]
-    except:
+        
+    except requests.exceptions.Timeout:
         METRIC_OUTBOUND_ERROR.labels('lcd').inc()
-        logger.exception("Error in get_latest_block")
+        logger.error(f"Timeout when requesting latest block from {url} (timeout: {http_timeout}s)")
+        err_flag = True
+        latest_block_height = None
+        latest_block_time = None
+    except requests.exceptions.ConnectionError:
+        METRIC_OUTBOUND_ERROR.labels('lcd').inc()
+        logger.error(f"Connection error when requesting latest block from {url}")
+        err_flag = True
+        latest_block_height = None
+        latest_block_time = None
+    except Exception as e:
+        METRIC_OUTBOUND_ERROR.labels('lcd').inc()
+        logger.exception(f"Unexpected error in get_latest_block when requesting {url}: {e}")
         err_flag = True
         latest_block_height = None
         latest_block_time = None
@@ -43,8 +124,32 @@ def get_latest_block():
 @time_request('lcd')
 def get_current_epoch(epoch_identifier: str):
     err_flag = False
+    url = f"{lcd_address}/{module_name}/epochs/v1beta1/epochs"
     try:
-        result = requests.get(f"{lcd_address}/{module_name}/epochs/v1beta1/epochs", timeout=http_timeout).json()
+        response = requests.get(url, timeout=http_timeout)
+        
+        # Check if the response is successful
+        if response.status_code != 200:
+            logger.error(f"HTTP error {response.status_code} when getting current epoch from {url}")
+            logger.error(f"Response content: {response.text[:500]}...")
+            err_flag = True
+            return err_flag, None
+        
+        # Check if response has content
+        if not response.text.strip():
+            logger.error(f"Empty response when getting current epoch from {url}")
+            err_flag = True
+            return err_flag, None
+        
+        # Try to parse JSON
+        try:
+            result = response.json()
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse JSON response from {url}: {e}")
+            logger.error(f"Response content: {response.text[:500]}...")
+            err_flag = True
+            return err_flag, None
+        
         for epoch in result.get("epochs", []):
             if epoch.get("identifier") == epoch_identifier:
                 current_epoch = epoch.get("current_epoch")
@@ -55,11 +160,20 @@ def get_current_epoch(epoch_identifier: str):
                     err_flag = True
                     return err_flag, None
         # didn't find any epochs that match the identifier
+        logger.warning(f"No epoch found with identifier '{epoch_identifier}' in response from {url}")
         err_flag = True
         return err_flag, None
 
+    except requests.exceptions.Timeout:
+        logger.error(f"Timeout when requesting current epoch from {url} (timeout: {http_timeout}s)")
+        err_flag = True
+        return err_flag, None
+    except requests.exceptions.ConnectionError:
+        logger.error(f"Connection error when requesting current epoch from {url}")
+        err_flag = True
+        return err_flag, None
     except Exception as e:
-        logger.error(f"An error occurred fetching current epoch: {str(e)}")
+        logger.error(f"An error occurred fetching current epoch from {url}: {str(e)}")
         err_flag = True
         return err_flag, None
 
@@ -114,25 +228,88 @@ def wait_for_block():
 
 @time_request('lcd')
 def get_current_misses():
+    url = f"{lcd_address}/{module_name}/oracle/v1beta1/validators/{valoper}/miss"
     try:
-        result = requests.get(f"{lcd_address}/{module_name}/oracle/v1beta1/validators/{valoper}/miss",
-                              timeout=http_timeout).json()
+        response = requests.get(url, timeout=http_timeout)
+        
+        # Check if the response is successful
+        if response.status_code != 200:
+            logger.error(f"HTTP error {response.status_code} when getting current misses from {url}")
+            logger.error(f"Response content: {response.text[:500]}...")
+            METRIC_OUTBOUND_ERROR.labels('lcd').inc()
+            return 0
+        
+        # Check if response has content
+        if not response.text.strip():
+            logger.error(f"Empty response when getting current misses from {url}")
+            METRIC_OUTBOUND_ERROR.labels('lcd').inc()
+            return 0
+        
+        # Try to parse JSON
+        try:
+            result = response.json()
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse JSON response from {url}: {e}")
+            logger.error(f"Response content: {response.text[:500]}...")
+            METRIC_OUTBOUND_ERROR.labels('lcd').inc()
+            return 0
+        
         misses = int(result["miss_counter"])
         return misses
-    except:
-        logger.exception("Error in get_current_misses")
+        
+    except requests.exceptions.Timeout:
+        logger.error(f"Timeout when requesting current misses from {url} (timeout: {http_timeout}s)")
+        METRIC_OUTBOUND_ERROR.labels('lcd').inc()
+        return 0
+    except requests.exceptions.ConnectionError:
+        logger.error(f"Connection error when requesting current misses from {url}")
+        METRIC_OUTBOUND_ERROR.labels('lcd').inc()
+        return 0
+    except Exception as e:
+        logger.exception(f"Unexpected error in get_current_misses when requesting {url}: {e}")
         METRIC_OUTBOUND_ERROR.labels('lcd').inc()
         return 0
 
 
 @time_request('lcd')
 def get_my_current_prevote_hash():
+    url = f"{lcd_address}/{module_name}/oracle/v1beta1/validators/{valoper}/aggregate_prevote"
     try:
-        result = requests.get(f"{lcd_address}/{module_name}/oracle/v1beta1/validators/{valoper}/aggregate_prevote",
-                              timeout=http_timeout).json()
+        response = requests.get(url, timeout=http_timeout)
+        
+        # Check if the response is successful
+        if response.status_code != 200:
+            logger.info(f"HTTP error {response.status_code} when getting prevote hash from {url} - likely no prevotes found")
+            METRIC_OUTBOUND_ERROR.labels('lcd').inc()
+            return []
+        
+        # Check if response has content
+        if not response.text.strip():
+            logger.info(f"Empty response when getting prevote hash from {url} - likely no prevotes found")
+            METRIC_OUTBOUND_ERROR.labels('lcd').inc()
+            return []
+        
+        # Try to parse JSON
+        try:
+            result = response.json()
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse JSON response from {url}: {e}")
+            logger.error(f"Response content: {response.text[:500]}...")
+            METRIC_OUTBOUND_ERROR.labels('lcd').inc()
+            return []
+        
         return result["aggregate_prevote"]["hash"]
+        
+    except requests.exceptions.Timeout:
+        logger.error(f"Timeout when requesting prevote hash from {url} (timeout: {http_timeout}s)")
+        METRIC_OUTBOUND_ERROR.labels('lcd').inc()
+        return []
+    except requests.exceptions.ConnectionError:
+        logger.error(f"Connection error when requesting prevote hash from {url}")
+        METRIC_OUTBOUND_ERROR.labels('lcd').inc()
+        return []
     except Exception as e:
-        logger.info(f"No prevotes found")
+        logger.info(f"Error getting prevote hash from {url} - likely no prevotes found: {e}")
         METRIC_OUTBOUND_ERROR.labels('lcd').inc()
         return []
 
