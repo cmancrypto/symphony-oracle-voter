@@ -28,23 +28,34 @@ if [ ${#missing_vars[@]} -ne 0 ]; then
     exit 1
 fi
 
-# Initialize Symphony configuration
-log "Initializing Symphony configuration..."
-symphonyd init feeder --chain-id "${CHAIN_ID}" 2>/dev/null || true
-symphonyd config set client chain-id "${CHAIN_ID}"
-symphonyd config set client keyring-backend "${KEY_BACKEND:-test}"
-symphonyd config set client node "${TENDERMINT_RPC}"
+# Set up persistent home directory for symphonyd (CRITICAL: prevents temp db creation)
+export SYMPHONYD_HOME=/symphony/.symphonyd
+mkdir -p "$SYMPHONYD_HOME"
+
+# CRITICAL: Set WASM cache directory to prevent temp WASM files
+export XDG_CACHE_HOME=/symphony/.cache
+mkdir -p "$XDG_CACHE_HOME"
+
+# Initialize Symphony configuration with explicit home directory
+log "Initializing Symphony configuration at $SYMPHONYD_HOME..."
+log "WASM cache directory: $XDG_CACHE_HOME"
+symphonyd init feeder --chain-id "${CHAIN_ID}" --home "$SYMPHONYD_HOME" 2>/dev/null || true
+symphonyd config set client chain-id "${CHAIN_ID}" --home "$SYMPHONYD_HOME"
+symphonyd config set client keyring-backend "${KEY_BACKEND:-test}" --home "$SYMPHONYD_HOME"
+symphonyd config set client node "${TENDERMINT_RPC}" --home "$SYMPHONYD_HOME"
+
+log "symphonyd home directory: $SYMPHONYD_HOME"
 
 # Verify symphonyd is working
 log "Verifying symphonyd connectivity..."
-if ! symphonyd status 2>/dev/null >/dev/null; then
+if ! symphonyd status --home "$SYMPHONYD_HOME" 2>/dev/null >/dev/null; then
     log "WARNING: symphonyd status command failed. Node might not be running or not accessible."
     log "Continuing anyway - the Python application will handle connection errors."
 fi
 
 # Query oracle feeder (this helps validate the setup)
 log "Querying oracle feeder for validator: ${VALIDATOR_ADDRESS}"
-symphonyd query oracle feeder "${VALIDATOR_ADDRESS}" || {
+symphonyd query oracle feeder "${VALIDATOR_ADDRESS}" --home "$SYMPHONYD_HOME" || {
     log "WARNING: Could not query oracle feeder. This might be expected for initial setup."
 }
 
@@ -57,11 +68,11 @@ key_exists() {
     
     if [ "${KEY_BACKEND:-test}" = "file" ] && [ -n "${KEY_PASSWORD}" ]; then
         # For file backend, provide password to check if key exists
-        echo "${KEY_PASSWORD}" | symphonyd keys show "$key_name" --address --keyring-backend "${KEY_BACKEND:-test}" 2>/dev/null >/dev/null
+        echo "${KEY_PASSWORD}" | symphonyd keys show "$key_name" --address --keyring-backend "${KEY_BACKEND:-test}" --home "$SYMPHONYD_HOME" 2>/dev/null >/dev/null
         return $?
     else
         # For test and other backends, no password needed
-        symphonyd keys show "$key_name" --address --keyring-backend "${KEY_BACKEND:-test}" 2>/dev/null >/dev/null
+        symphonyd keys show "$key_name" --address --keyring-backend "${KEY_BACKEND:-test}" --home "$SYMPHONYD_HOME" 2>/dev/null >/dev/null
         return $?
     fi
 }
@@ -75,16 +86,16 @@ if [ -n "${FEEDER_SEED}" ]; then
     if key_exists "feeder"; then
         log "Feeder key already exists in keyring, checking address..."
         if [ "${KEY_BACKEND:-test}" = "file" ] && [ -n "${KEY_PASSWORD}" ]; then
-            existing_address=$(echo "${KEY_PASSWORD}" | symphonyd keys show feeder --address --keyring-backend "${KEY_BACKEND:-test}" 2>/dev/null)
+            existing_address=$(echo "${KEY_PASSWORD}" | symphonyd keys show feeder --address --keyring-backend "${KEY_BACKEND:-test}" --home "$SYMPHONYD_HOME" 2>/dev/null)
         else
-            existing_address=$(symphonyd keys show feeder --address --keyring-backend "${KEY_BACKEND:-test}" 2>/dev/null)
+            existing_address=$(symphonyd keys show feeder --address --keyring-backend "${KEY_BACKEND:-test}" --home "$SYMPHONYD_HOME" 2>/dev/null)
         fi
         if [ "$existing_address" = "${FEEDER_ADDRESS}" ]; then
             log "Existing feeder key matches expected address: $existing_address"
         else
             log "WARNING: Existing feeder key address ($existing_address) doesn't match expected (${FEEDER_ADDRESS})"
             log "Removing existing key and re-adding..."
-            symphonyd keys delete feeder --yes --keyring-backend "${KEY_BACKEND:-test}" 2>/dev/null || true
+            symphonyd keys delete feeder --yes --keyring-backend "${KEY_BACKEND:-test}" --home "$SYMPHONYD_HOME" 2>/dev/null || true
         fi
     fi
     
@@ -97,17 +108,17 @@ if [ -n "${FEEDER_SEED}" ]; then
             # For file backend with password, send seed first, then password twice
             log "Using file keyring backend with password..."
             log "Sending: seed phrase, then password twice for keyring encryption"
-            printf "%s\n%s\n%s\n" "${FEEDER_SEED}" "${KEY_PASSWORD}" "${KEY_PASSWORD}" | symphonyd keys add --recover feeder --keyring-backend "${KEY_BACKEND:-test}"
+            printf "%s\n%s\n%s\n" "${FEEDER_SEED}" "${KEY_PASSWORD}" "${KEY_PASSWORD}" | symphonyd keys add --recover feeder --keyring-backend "${KEY_BACKEND:-test}" --home "$SYMPHONYD_HOME"
         elif [ "${KEY_BACKEND:-test}" = "file" ]; then
             # For file backend without password, prompt for password
             log "Using file keyring backend - will prompt for keyring password..."
             log "NOTE: You'll need to enter the same password twice to create the keyring"
-            echo "${FEEDER_SEED}" | symphonyd keys add --recover feeder --keyring-backend "${KEY_BACKEND:-test}"
+            echo "${FEEDER_SEED}" | symphonyd keys add --recover feeder --keyring-backend "${KEY_BACKEND:-test}" --home "$SYMPHONYD_HOME"
         elif [ "${KEY_BACKEND:-test}" = "os" ] && [ -n "${KEY_PASSWORD}" ]; then
             # For OS backend with password, send both seed and password
             log "WARNING: OS keyring backend has limited Docker compatibility"
             log "Using OS keyring backend with password..."
-            (echo "${FEEDER_SEED}"; echo "${KEY_PASSWORD}"; echo "${KEY_PASSWORD}") | symphonyd keys add --recover feeder --keyring-backend "${KEY_BACKEND:-test}" 2>/dev/null || {
+            (echo "${FEEDER_SEED}"; echo "${KEY_PASSWORD}"; echo "${KEY_PASSWORD}") | symphonyd keys add --recover feeder --keyring-backend "${KEY_BACKEND:-test}" --home "$SYMPHONYD_HOME" 2>/dev/null || {
                 log "Failed to add key with password. OS backend likely not available in Docker."
                 log "Please use KEY_BACKEND=file for Docker deployment"
                 exit 1
@@ -121,14 +132,14 @@ if [ -n "${FEEDER_SEED}" ]; then
             exit 1
         else
             # For test backend, just send the seed
-            echo "${FEEDER_SEED}" | symphonyd keys add --recover feeder --keyring-backend "${KEY_BACKEND:-test}"
+            echo "${FEEDER_SEED}" | symphonyd keys add --recover feeder --keyring-backend "${KEY_BACKEND:-test}" --home "$SYMPHONYD_HOME"
         fi
         
         # Verify the key was added correctly
         if [ "${KEY_BACKEND:-test}" = "file" ] && [ -n "${KEY_PASSWORD}" ]; then
-            feeder_addr=$(echo "${KEY_PASSWORD}" | symphonyd keys show feeder --address --keyring-backend "${KEY_BACKEND:-test}" 2>/dev/null)
+            feeder_addr=$(echo "${KEY_PASSWORD}" | symphonyd keys show feeder --address --keyring-backend "${KEY_BACKEND:-test}" --home "$SYMPHONYD_HOME" 2>/dev/null)
         else
-            feeder_addr=$(symphonyd keys show feeder --address --keyring-backend "${KEY_BACKEND:-test}" 2>/dev/null)
+            feeder_addr=$(symphonyd keys show feeder --address --keyring-backend "${KEY_BACKEND:-test}" --home "$SYMPHONYD_HOME" 2>/dev/null)
         fi
         if [ "$feeder_addr" = "${FEEDER_ADDRESS}" ]; then
             log "✓ Feeder key successfully added to keyring: $feeder_addr"
@@ -145,9 +156,9 @@ elif [ -n "${FEEDER_ADDRESS}" ]; then
     log "FEEDER_ADDRESS provided but no FEEDER_SEED - checking if feeder key exists in keyring..."
     if key_exists "feeder"; then
         if [ "${KEY_BACKEND:-test}" = "file" ] && [ -n "${KEY_PASSWORD}" ]; then
-            feeder_addr=$(echo "${KEY_PASSWORD}" | symphonyd keys show feeder --address --keyring-backend "${KEY_BACKEND:-test}" 2>/dev/null)
+            feeder_addr=$(echo "${KEY_PASSWORD}" | symphonyd keys show feeder --address --keyring-backend "${KEY_BACKEND:-test}" --home "$SYMPHONYD_HOME" 2>/dev/null)
         else
-            feeder_addr=$(symphonyd keys show feeder --address --keyring-backend "${KEY_BACKEND:-test}" 2>/dev/null)
+            feeder_addr=$(symphonyd keys show feeder --address --keyring-backend "${KEY_BACKEND:-test}" --home "$SYMPHONYD_HOME" 2>/dev/null)
         fi
         if [ "$feeder_addr" = "${FEEDER_ADDRESS}" ]; then
             log "✓ Feeder key found in keyring: $feeder_addr"
@@ -170,9 +181,9 @@ if [ -z "${FEEDER_ADDRESS}" ]; then
     # Try to find validator key by address
     validator_key_name=""
     if [ "${KEY_BACKEND:-test}" = "file" ] && [ -n "${KEY_PASSWORD}" ]; then
-        for key_name in $(echo ${KEY_PASSWORD} | symphonyd keys list --output json --keyring-backend "${KEY_BACKEND:-test}" 2>/dev/null | jq -r '.[].name' 2>/dev/null || echo ""); do
+        for key_name in $(echo ${KEY_PASSWORD} | symphonyd keys list --output json --keyring-backend "${KEY_BACKEND:-test}" --home "$SYMPHONYD_HOME" 2>/dev/null | jq -r '.[].name' 2>/dev/null || echo ""); do
             if [ -n "$key_name" ]; then
-                key_addr=$(echo ${KEY_PASSWORD} | symphonyd keys show "$key_name" --address --keyring-backend "${KEY_BACKEND:-test}" 2>/dev/null)
+                key_addr=$(echo ${KEY_PASSWORD} | symphonyd keys show "$key_name" --address --keyring-backend "${KEY_BACKEND:-test}" --home "$SYMPHONYD_HOME" 2>/dev/null)
                 if [ "$key_addr" = "${VALIDATOR_ADDRESS}" ]; then
                     validator_key_name="$key_name"
                     break
@@ -180,9 +191,9 @@ if [ -z "${FEEDER_ADDRESS}" ]; then
             fi
         done
     else
-        for key_name in $(symphonyd keys list --output json --keyring-backend "${KEY_BACKEND:-test}" 2>/dev/null | jq -r '.[].name' 2>/dev/null || echo ""); do
+        for key_name in $(symphonyd keys list --output json --keyring-backend "${KEY_BACKEND:-test}" --home "$SYMPHONYD_HOME" 2>/dev/null | jq -r '.[].name' 2>/dev/null || echo ""); do
             if [ -n "$key_name" ]; then
-                key_addr=$(symphonyd keys show "$key_name" --address --keyring-backend "${KEY_BACKEND:-test}" 2>/dev/null)
+                key_addr=$(symphonyd keys show "$key_name" --address --keyring-backend "${KEY_BACKEND:-test}" --home "$SYMPHONYD_HOME" 2>/dev/null)
                 if [ "$key_addr" = "${VALIDATOR_ADDRESS}" ]; then
                     validator_key_name="$key_name"
                     break
@@ -197,9 +208,9 @@ if [ -z "${FEEDER_ADDRESS}" ]; then
         log "ERROR: Validator account key not found in keyring for address: ${VALIDATOR_ADDRESS}"
         log "Available keys in keyring:"
         if [ "${KEY_BACKEND:-test}" = "file" ] && [ -n "${KEY_PASSWORD}" ]; then
-            echo ${KEY_PASSWORD} | symphonyd keys list --keyring-backend "${KEY_BACKEND:-test}" 2>/dev/null || log "No keys found in keyring"
+            echo ${KEY_PASSWORD} | symphonyd keys list --keyring-backend "${KEY_BACKEND:-test}" --home "$SYMPHONYD_HOME" 2>/dev/null || log "No keys found in keyring"
         else
-            symphonyd keys list --keyring-backend "${KEY_BACKEND:-test}" 2>/dev/null || log "No keys found in keyring"
+            symphonyd keys list --keyring-backend "${KEY_BACKEND:-test}" --home "$SYMPHONYD_HOME" 2>/dev/null || log "No keys found in keyring"
         fi
         exit 1
     fi
@@ -208,9 +219,9 @@ fi
 # List all keys in keyring for verification
 log "Keys currently in keyring:"
 if [ "${KEY_BACKEND:-test}" = "file" ] && [ -n "${KEY_PASSWORD}" ]; then
-    echo ${KEY_PASSWORD} | symphonyd keys list --keyring-backend "${KEY_BACKEND:-test}" 2>/dev/null || log "No keys found in keyring"
+    echo ${KEY_PASSWORD} | symphonyd keys list --keyring-backend "${KEY_BACKEND:-test}" --home "$SYMPHONYD_HOME" 2>/dev/null || log "No keys found in keyring"
 else
-    symphonyd keys list --keyring-backend "${KEY_BACKEND:-test}" 2>/dev/null || log "No keys found in keyring"
+    symphonyd keys list --keyring-backend "${KEY_BACKEND:-test}" --home "$SYMPHONYD_HOME" 2>/dev/null || log "No keys found in keyring"
 fi
 
 # Create a minimal .env file for the Python application with only necessary variables
@@ -232,6 +243,8 @@ PYTHON_ENV=${PYTHON_ENV:-production}
 LOG_LEVEL=${LOG_LEVEL:-INFO}
 DEBUG=${DEBUG:-false}
 SYMPHONYD_PATH=${SYMPHONYD_PATH:-symphonyd}
+SYMPHONYD_HOME=${SYMPHONYD_HOME}
+XDG_CACHE_HOME=${XDG_CACHE_HOME}
 FEE_DENOM=${FEE_DENOM:-note}
 FEE_GAS=${FEE_GAS:-0.0025note}
 GAS_ADJUSTMENT=${GAS_ADJUSTMENT:-2}
@@ -242,5 +255,16 @@ MAX_RETRY_PER_EPOCH=${MAX_RETRY_PER_EPOCH:-1}
 EOF
 
 log "Starting Symphony Oracle Price Feeder..."
+
+# Set up periodic temp cleanup (every hour)
+(while true; do
+    sleep 3600
+    /usr/local/bin/cleanup-temp.sh
+done) &
+
+# Set TMPDIR to a controlled location
+export TMPDIR=/tmp/symphony
+mkdir -p "$TMPDIR"
+
 cd /symphony
-exec /usr/local/bin/python /symphony/main.py 
+exec /usr/local/bin/python /symphony/main.py

@@ -1,5 +1,7 @@
 import subprocess
 import json
+import os
+import time
 from typing import List, Optional
 import requests
 from config import *
@@ -315,21 +317,45 @@ def get_my_current_prevote_hash():
 
 
 def run_symphonyd_command(command: List[str]) -> dict:
+    # Track subprocess calls
+    METRIC_SUBPROCESS_CALLS.inc()
+    
+    process = None
+    start_time = time.time()
     try:
         logger.debug(f"Executing command: {' '.join(command)}")
 
-        # Start the command
+        # Start the command with explicit cleanup
         process = subprocess.Popen(
             command,
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            text=True
+            text=True,
+            # Ensure process cleanup
+            preexec_fn=None if os.name == 'nt' else os.setsid
         )
+        
+        process_pid = process.pid
+        logger.debug(f"Started subprocess PID: {process_pid}")
         try:
             stdout, stderr = process.communicate(input=f"{key_password}\n", timeout=30)
+            execution_time = time.time() - start_time
+            logger.debug(f"Subprocess PID {process_pid} completed in {execution_time:.2f}s")
         except subprocess.TimeoutExpired:
-            process.kill()
+            logger.warning(f"Subprocess PID {process_pid} timed out after 30 seconds")
+            # More aggressive cleanup on timeout
+            if process.poll() is None:
+                try:
+                    logger.debug(f"Terminating subprocess PID {process_pid}")
+                    process.terminate()
+                    process.wait(timeout=5)
+                    logger.debug(f"Subprocess PID {process_pid} terminated successfully")
+                except subprocess.TimeoutExpired:
+                    logger.warning(f"Subprocess PID {process_pid} did not terminate, killing...")
+                    process.kill()
+                    process.wait()
+                    logger.debug(f"Subprocess PID {process_pid} killed")
             stdout, stderr = process.communicate()
             logger.error(f"Command timed out after 30 seconds: {' '.join(command)}")
             return {"error": "Command timed out after 30 seconds", "returncode": -1}
@@ -348,7 +374,7 @@ def run_symphonyd_command(command: List[str]) -> dict:
             logger.error(f"Command stderr: {stderr}")
             return {"error": stderr, "returncode": process.returncode}
 
-            # Try to parse the output as JSON
+        # Try to parse the output as JSON
         try:
             return json.loads(stdout)
         except json.JSONDecodeError:
@@ -358,6 +384,25 @@ def run_symphonyd_command(command: List[str]) -> dict:
     except Exception as e:
         logger.error(f"An error occurred with subprocess: {str(e)}")
         return {"error": str(e)}
+    finally:
+        # Ensure process cleanup
+        if process is not None:
+            if process.poll() is None:
+                logger.debug(f"Cleaning up subprocess PID {process.pid} in finally block")
+                try:
+                    process.terminate()
+                    process.wait(timeout=2)
+                    logger.debug(f"Subprocess PID {process.pid} cleaned up successfully")
+                except (subprocess.TimeoutExpired, OSError):
+                    try:
+                        logger.warning(f"Force killing subprocess PID {process.pid}")
+                        process.kill()
+                        process.wait()
+                        logger.debug(f"Subprocess PID {process.pid} force killed")
+                    except OSError:
+                        logger.error(f"Failed to kill subprocess PID {process.pid}")
+            else:
+                logger.debug(f"Subprocess PID {process.pid} already terminated with code {process.returncode}")
 
 
 def aggregate_exchange_rate_prevote(salt: str, exchange_rates: str, from_address: str,

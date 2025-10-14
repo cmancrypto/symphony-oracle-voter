@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 import time
 import logging
+import os
+import glob
 from prometheus_client import start_http_server
 
 from config import *
@@ -18,6 +20,53 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 logger.debug("logging test")
 
+def count_temp_files():
+    """Count temporary files in /tmp directory"""
+    try:
+        temp_files = len(glob.glob('/tmp/*'))
+        METRIC_TEMP_FILES.set(temp_files)
+        return temp_files
+    except Exception as e:
+        logger.warning(f"Failed to count temp files: {e}")
+        return 0
+
+def check_subprocess_health():
+    """Check for zombie processes and log subprocess health"""
+    try:
+        # Count running processes
+        import psutil
+        current_process = psutil.Process()
+        children = current_process.children(recursive=True)
+        
+        zombie_count = 0
+        running_count = 0
+        
+        for child in children:
+            try:
+                if child.status() == psutil.STATUS_ZOMBIE:
+                    zombie_count += 1
+                    logger.warning(f"Found zombie process: PID {child.pid}")
+                else:
+                    running_count += 1
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                pass
+        
+        if zombie_count > 0:
+            logger.error(f"Found {zombie_count} zombie processes, {running_count} running children")
+        elif running_count > 5:  # Threshold for too many child processes
+            logger.warning(f"High number of child processes: {running_count}")
+        else:
+            logger.debug(f"Process health: {running_count} children, {zombie_count} zombies")
+            
+        return zombie_count, running_count
+        
+    except ImportError:
+        logger.debug("psutil not available, skipping process health check")
+        return 0, 0
+    except Exception as e:
+        logger.warning(f"Failed to check subprocess health: {e}")
+        return 0, 0
+
 def main():
     logger.debug("main")
     telegram("Starting Feeder")
@@ -29,6 +78,7 @@ def main():
     last_salt = {}
     last_hash = []
     misses = 0
+    temp_file_check_counter = 0
 
     ##perform our pre-flight checks
     if not wait_for_ready():
@@ -56,6 +106,20 @@ def main():
                 METRIC_HEIGHT.set(currentheight)
                 METRIC_MISSES.set(currentmisses)
                 METRIC_EPOCHS.set(current_epoch)
+                
+                # Monitor temp files and subprocess health every 10 iterations
+                temp_file_check_counter += 1
+                if temp_file_check_counter >= 10:
+                    temp_files = count_temp_files()
+                    zombie_count, running_count = check_subprocess_health()
+                    
+                    if temp_files > 1000:
+                        logger.warning(f"High number of temp files detected: {temp_files}")
+                    if zombie_count > 0:
+                        logger.error(f"Zombie processes detected: {zombie_count}")
+                    
+                    logger.info(f"Health check - Temp files: {temp_files}, Child processes: {running_count}, Zombies: {zombie_count}")
+                    temp_file_check_counter = 0
                 # turned off the misses height and misses alerting until can work out if the height is current height or something from the old miss API
                 #if its nothing special, can use current block height?
                 """if currentheight > 0:

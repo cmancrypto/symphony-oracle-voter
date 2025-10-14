@@ -120,7 +120,7 @@ def check_environment() -> Tuple[bool, str]:
 
     # Test symphonyd version command
     try:
-        result = subprocess.run([symphonyd_path, "version"],
+        result = subprocess.run([symphonyd_path, "version", "--home", symphonyd_home],
                                 capture_output=True,
                                 text=True,
                                 timeout=5)

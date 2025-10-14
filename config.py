@@ -52,6 +52,7 @@ gas_adjustment = os.getenv("GAS_ADJUSTMENT","2")
 fee_amount = os.getenv("FEE_AMOUNT", "500000")
 keyring_back_end = os.getenv("KEY_BACKEND","test")
 symphonyd_path = os.getenv('SYMPHONYD_PATH', 'symphonyd') #ensure symphonyd properly on PATH
+symphonyd_home = os.getenv('SYMPHONYD_HOME', os.path.expanduser('~/.symphonyd')) # Home directory for symphonyd
 rpc_node =  os.getenv("TENDERMINT_RPC", "tcp://localhost:26657") # this is what port you run your node tendermint RPC on
 
 """
@@ -66,7 +67,7 @@ chain_id = os.getenv("CHAIN_ID", "symphony-1")
 # set last update time
 last_height = 0
 # in tx_config - include all the flags that you need, don't include "from" as this is set in script
-#doesn't support --home flags, leads to keyring issues
+# IMPORTANT: --home flag is REQUIRED to prevent temp database creation in /tmp
 tx_config = [
     "--chain-id",chain_id,
     "--gas-prices",fee_gas,
@@ -74,7 +75,8 @@ tx_config = [
     "--gas", "auto",
     "--keyring-backend", keyring_back_end,
     "--broadcast-mode", "sync",
-    "--node", rpc_node
+    "--node", rpc_node,
+    "--home", symphonyd_home  # CRITICAL: prevents temp db creation
 ]
 max_block_confirm_wait_time= os.getenv("BLOCK_WAIT_TIME", "10") #define how long is the maximum we should wait for next block in seconds
 max_retry_per_epoch = int(os.getenv("MAX_RETRY_PER_EPOCH", "1"))
@@ -151,6 +153,8 @@ METRIC_MARKET_PRICE = Gauge("symphony_oracle_market_price", "Last market price",
 
 METRIC_OUTBOUND_ERROR = Counter("terra_oracle_request_errors", "Outbound HTTP request error count", ["remote"])
 METRIC_OUTBOUND_LATENCY = Histogram("terra_oracle_request_latency", "Outbound HTTP request latency", ["remote"])
+METRIC_SUBPROCESS_CALLS = Counter("symphony_oracle_subprocess_calls", "Number of subprocess calls made")
+METRIC_TEMP_FILES = Gauge("symphony_oracle_temp_files", "Number of temporary files in /tmp")
 
 default_base_fx = "uusd"
 default_base_fx_map="USD"

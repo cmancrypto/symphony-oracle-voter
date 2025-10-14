@@ -1,4 +1,5 @@
 /test.sh
+/test_subprocess_cleanup.py
 /.idea
 # Environments
 .env

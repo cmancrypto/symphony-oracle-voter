@@ -17,13 +17,16 @@ services:
     volumes:
       # Optional: Mount for persistent data if needed
       - ./data:/symphony/data
-      # Optional: Mount keyring for persistence across restarts
-      # Uncomment the line below if you want to persist the keyring
-      # - ./symphony_keyring:/root/.symphonyd
+      # RECOMMENDED: Mount symphonyd home to persist keyring and prevent temp file accumulation
+      # Uncomment the line below for production deployments
+      # - ./symphony_home:/symphony/.symphonyd
+      # OPTIONAL: Mount cache directory to persist WASM cache across restarts
+      # This reduces startup time and prevents re-compilation
+      # - ./symphony_cache:/symphony/.cache
     networks:
       - symphony-network
     healthcheck:
-      test: ["CMD", "sh", "-c", "curl -f http://localhost:19000/metrics >/dev/null 2>&1 && symphonyd status >/dev/null 2>&1"]
+      test: ["CMD", "sh", "-c", "curl -f http://localhost:19000/metrics >/dev/null 2>&1 && symphonyd status --home /symphony/.symphonyd >/dev/null 2>&1"]
       interval: 30s
       timeout: 10s
       retries: 3
