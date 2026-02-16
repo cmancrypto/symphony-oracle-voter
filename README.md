@@ -44,7 +44,7 @@ This guide will walk you through the process of setting up the Symphony Oracle V
 2. Navigate to the project directory and checkout current version:
    ```
    cd symphony-oracle-voter
-   git checkout v0.0.5r1
+   git checkout v1.0.0
    ```
 3. Modify .env_sample to set the required configuration. The following parameters are key:
 - VALIDATOR_ADDRESS - symphony prefix address (symphony1... format)
